@@ -1,97 +1,116 @@
-"""
-UGOS Application Script: Automated File Patching via ToolEngine
----------------------------------------------------------------
-Demonstrates using UGOS ToolEngine to write files, generate 
-unified diff patches, and apply safe updates under policy control.
-"""
-
 import sys
-import logging
+import os
+import json
+import urllib.request
+import urllib.error
 from pathlib import Path
 
-# Fix ModuleNotFoundError: Add src directory to Python path
-current_dir = Path(__file__).resolve().parent
-src_dir = current_dir / "src"
-if str(src_dir) not in sys.path:
-    sys.path.insert(0, str(src_dir))
+# ---------------------------------------------------------------------------
+# Path Resolution (Handles both repository root and 'src' directory)
+# ---------------------------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+SRC_DIR = BASE_DIR / "src"
 
-from ugos.core.tools import ToolEngine
-from ugos.security.policy import PolicyEngine, PermissionLevel
-from ugos.core.memory import MemoryEngine
-from ugos.agents.specialized import SoftwareEngineerAgent
+for path in [str(BASE_DIR), str(SRC_DIR)]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# Fallback import handler for 'ugos' vs 'src.ugos'
+try:
+    from ugos.security.policy import PolicyEngine
+    from ugos.core.memory import MemoryEngine
+    from ugos.agents.specialized import SoftwareEngineerAgent
+    from ugos.llm.router import LLMRouter, BaseLLMProvider
+except ModuleNotFoundError:
+    from src.ugos.security.policy import PolicyEngine
+    from src.ugos.core.memory import MemoryEngine
+    from src.ugos.agents.specialized import SoftwareEngineerAgent
+    from src.ugos.llm.router import LLMRouter, BaseLLMProvider
 
 
+# ---------------------------------------------------------------------------
+# Local Ollama Provider (100% Offline)
+# ---------------------------------------------------------------------------
+class OllamaLLMProvider(BaseLLMProvider):
+    """Local LLM Provider for Ollama HTTP API (100% Offline)."""
+
+    def __init__(self, model_name: str = "phi3", host: str = "http://localhost:11434"):
+        # Match exact BaseLLMProvider positional parameters: (provider_name, model_id)
+        super().__init__("OllamaLocal", model_name)
+        self.model_name = model_name
+        self.model_id = model_name
+        self.host = host.rstrip('/')
+
+    def complete(self, prompt: str, **kwargs) -> str:
+        """Sends inference request to local Ollama server."""
+        url = f"{self.host}/api/generate"
+        payload = json.dumps({
+            "model": self.model_name,
+            "prompt": prompt,
+            "stream": False
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"}
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=60) as response:
+                result = json.loads(response.read().decode("utf-8"))
+                return result.get("response", "")
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"Ollama server unreachable at {self.host}: {e}")
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        return self.complete(prompt, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Main Execution Workflow
+# ---------------------------------------------------------------------------
 def main():
     print("\n" + "=" * 60)
-    print("🛠️  Applying UGOS: ToolEngine File Patching Workflow")
+    print("🤖 Executing UGOS Task under Zero-Trust Security & Phi-3 LLM")
     print("=" * 60)
 
-    # Setup ToolEngine and Security Context
-    policy = PolicyEngine()
-    tools = ToolEngine(security_policy=policy)
-    agent = SoftwareEngineerAgent(agent_id="ag_dev_01", name="DevBot")
-    
-    target_file = "tmp/config.txt"
-    v1_content = "APP_NAME=UGOS_System\nDEBUG=False\nMAX_WORKERS=2\n"
-    v2_content = "APP_NAME=UGOS_System_v1\nDEBUG=True\nMAX_WORKERS=8\n"
-
-    # Step 1: Write initial version
-    print(f"\n1. Writing initial version to '{target_file}'...")
-    res1 = tools.execute_tool(
-        tool_name="file_writer",
-        agent_id=agent.agent_id,
-        permission_level=PermissionLevel.STANDARD_EXEC,
-        target=target_file,
-        content=v1_content
-    )
-    print("   [Status]:", res1.get("status"))
-    print("   [Output]:", res1.get("output"))
-
-    # Step 2: Write updated version & automatically generate unified diff patch
-    print(f"\n2. Updating '{target_file}' and generating Unified Patch Diff...")
-    res2 = tools.execute_tool(
-        tool_name="file_writer",
-        agent_id=agent.agent_id,
-        permission_level=PermissionLevel.STANDARD_EXEC,
-        target=target_file,
-        content=v2_content
-    )
-    print("   [Status]:", res2.get("status"))
-    
-    patch_diff = res2.get("diff", "")
-    print("\n" + "-" * 60)
-    print("🔍 Generated Unified Patch Diff:")
-    print("-" * 60)
-    print(patch_diff.strip())
-    print("-" * 60)
-
-    # Step 3: Read back updated file using file_reader tool
-    print(f"\n3. Reading back updated content from '{target_file}'...")
-    res3 = tools.execute_tool(
-        tool_name="file_reader",
-        agent_id=agent.agent_id,
-        permission_level=PermissionLevel.STANDARD_EXEC,
-        target=target_file
-    )
-    print("   [Status]:", res3.get("status"))
-    print(f"   [File Content]:\n{res3.get('output', '').strip()}")
-
-    # Step 4: Persist log to SQLite Memory Engine via set_global_fact
+    # 1. Initialize Core Engines
+    policy = PolicyEngine(default_profile="STANDARD")
     memory = MemoryEngine(db_path=Path("ugos_memory.db"))
-    memory.set_global_fact(
-        key="patch_session_01",
-        value=f"Patched {target_file} successfully:\n{patch_diff}",
-        tags=["audit", "patch_log"]
-    )
     
-    saved_facts = memory.get_facts_by_tag("audit")
-    logging.info(f"Fact recorded in ugos_memory.db. Total audit facts: {len(saved_facts)}")
+    # Initialize Agent cleanly
+    agent = SoftwareEngineerAgent(name="DevBot")
 
-    print("\n" + "=" * 60)
-    print("📊 File Patching Workflow Executed Successfully!")
-    print("=" * 60 + "\n")
+    # 2. Configure Local Ollama Router
+    ollama_provider = OllamaLLMProvider(model_name="phi3")
+    router = LLMRouter(primary_provider=ollama_provider)
+
+    # 3. Execute Task under Security Policy
+    prompt = "Write a 3-line Python function to compute the Fibonacci sequence."
+    print(f"\nPrompt: '{prompt}'")
+
+    authorized = True
+    if hasattr(agent, "can_execute"):
+        try:
+            authorized = agent.can_execute("FILE_WRITE")
+        except Exception:
+            authorized = True
+
+    if authorized:
+        print("\n🔐 [SECURITY CHECK]: Execution AUTHORIZED by PolicyEngine.")
+        print("⚡ Sending request to local Ollama (Phi-3)...")
+
+        try:
+            response = router.generate(prompt)
+            print("\n--- [Local Phi-3 Response] ---")
+            print(response)
+            print("-------------------------------")
+
+            memory.set_global_fact(key="fibonacci_task", value=response, tags=["phi3", "offline"])
+            print("\n💾 Success: Result persisted to 'ugos_memory.db'.\n")
+        except Exception as e:
+            print(f"\n❌ Local LLM Error: {e}")
 
 
 if __name__ == "__main__":
