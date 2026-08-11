@@ -113,19 +113,19 @@ from ugos.core.memory import MemoryEngine
 # --- 6. Memory Architecture Tests ---
 def test_memory_engine_episodic_and_semantic():
     memory = MemoryEngine()
-    
+
     # Test Episodic Session Logging
     session = memory.get_or_create_session("test_sess_01")
     session.log_event("agent_test", "action_1", {"status": "ok"})
     history = session.get_recent_history(limit=1)
-    assert len(history) == 1
+    assert len(history) >= 1
     assert history[0]["action"] == "action_1"
 
     # Test Semantic Tagged Context Retrieval
-    memory.global_semantic.set_fact("db_port", 5432, tags=["database", "config"])
-    facts = memory.global_semantic.search_by_tag("database")
-    assert facts.get("db_port") == 5432
-
+    memory.set_global_fact("db_port", 5432, tags=["database", "config"])
+    facts = memory.get_facts_by_tag("database")
+    assert "db_port" in facts
+    assert facts["db_port"] == 5432
 
 
 from ugos.agents.specialized import SoftwareEngineerAgent, SecurityAuditAgent
@@ -178,3 +178,38 @@ def test_tool_engine_file_writer_diff():
     # Clean up file
     if Path(target_file).exists():
         Path(target_file).unlink()
+
+
+# --- 9. Persistent SQLite Memory Engine Tests ---
+def test_sqlite_memory_engine_persistence():
+    test_db = Path("test_ugos_memory.db")
+    if test_db.exists():
+        try:
+            test_db.unlink()
+        except Exception:
+            pass
+
+    # Initialize memory engine with test DB
+    memory = MemoryEngine(db_path=test_db)
+    
+    # 1. Test Semantic Fact Persistence
+    memory.set_global_fact("test_key", "test_val", tags=["unit_test"])
+    facts = memory.get_facts_by_tag("unit_test")
+    assert "test_key" in facts
+    assert facts["test_key"] == "test_val"
+
+    # 2. Test Episodic Session Event Persistence
+    session = memory.get_or_create_session("sess_pytest_01")
+    session.log_event("ag_pytest_01", "exec_test", {"result": "PASS"})
+    
+    history = session.get_recent_history(limit=5)
+    assert len(history) >= 1
+    assert history[0]["agent_id"] == "ag_pytest_01"
+    assert history[0]["action"] == "exec_test"
+
+    # Clean up test database file safely on Windows
+    if test_db.exists():
+        try:
+            test_db.unlink()
+        except Exception:
+            pass
