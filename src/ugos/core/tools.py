@@ -1,14 +1,16 @@
 """
-UGOS_107: Tool Execution Engine
--------------------------------
-Provides tool registration, input validation, and security-gated
-execution of agent capabilities.
+UGOS_107: Tool Execution Engine & Capability Registry
+-----------------------------------------------------
+Manages sandboxed tool registration, permission checking via PolicyEngine,
+and safe execution for file reading, file writing with unified diff generation,
+and expression/code evaluation.
 """
 
 import sys
 import logging
+import difflib
 from pathlib import Path
-from typing import Dict, Any, Callable, List, Optional
+from typing import Dict, Any, Optional, List
 
 # Ensure project root is in path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
@@ -17,136 +19,155 @@ from ugos.security.policy import PolicyEngine, PermissionLevel, SecurityAction
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-class ToolEngine:
-    """Registry and sandboxed executor for agent tools."""
 
-    def __init__(self):
+class ToolEngine:
+    """UGOS Sandboxed Tool Execution Router with Patch/Diff capabilities."""
+
+    def __init__(self, security_policy: Optional[PolicyEngine] = None):
+        self.policy = security_policy or PolicyEngine()
         self.registry: Dict[str, Dict[str, Any]] = {}
-        self.security_engine = PolicyEngine()
         self._register_default_tools()
         logging.info("Initialized UGOS Tool Execution Engine")
 
     def _register_default_tools(self):
-        """Registers core built-in system tools."""
-        
-        # Tool: File Reader
-        self.register_tool(
-            name="file_reader",
-            description="Reads text from a target file path.",
-            action_type=SecurityAction.READ_FILE,
-            handler=self._tool_read_file
-        )
-
-        # Tool: Code Executor (Python)
-        self.register_tool(
-            name="python_eval",
-            description="Executes a Python snippet inside a controlled scope.",
-            action_type=SecurityAction.EXECUTE_SHELL,
-            handler=self._tool_python_eval
-        )
-
-    def register_tool(self, name: str, description: str, action_type: SecurityAction, handler: Callable):
-        """Registers a new tool into the Tool Engine registry."""
-        self.registry[name] = {
-            "name": name,
-            "description": description,
-            "action_type": action_type,
-            "handler": handler
+        """Registers system core capabilities into tool registry."""
+        self.registry["file_reader"] = {
+            "action": SecurityAction.READ_FILE,
+            "handler": self._handle_file_reader
         }
-        logging.info(f"Tool registered: '{name}' (Action: {action_type.value})")
+        self.registry["file_writer"] = {
+            "action": SecurityAction.WRITE_FILE,
+            "handler": self._handle_file_writer
+        }
+        self.registry["python_eval"] = {
+            "action": SecurityAction.EXECUTE_SHELL,
+            "handler": self._handle_python_eval
+        }
+        logging.info("Tools registered: 'file_reader', 'file_writer', 'python_eval'")
+
+    def _handle_file_reader(self, target: str) -> Dict[str, Any]:
+        """Reads content from target file path."""
+        path = Path(target)
+        if not path.exists():
+            return {"status": "ERROR", "reason": f"File '{target}' does not exist."}
+        try:
+            content = path.read_text(encoding="utf-8")
+            return {"status": "SUCCESS", "output": content}
+        except Exception as e:
+            return {"status": "ERROR", "reason": str(e)}
+
+    def _handle_file_writer(self, target: str, content: str) -> Dict[str, Any]:
+        """Writes/updates content in target path and generates unified diff patch."""
+        path = Path(target)
+        old_content = ""
+        if path.exists():
+            try:
+                old_content = path.read_text(encoding="utf-8")
+            except Exception:
+                old_content = ""
+
+        # Generate Unified Patch Diff
+        old_lines = old_content.splitlines(keepends=True)
+        new_lines = content.splitlines(keepends=True)
+        diff = "".join(difflib.unified_diff(
+            old_lines,
+            new_lines,
+            fromfile=f"a/{target}",
+            tofile=f"b/{target}"
+        ))
+
+        try:
+            # Ensure parent directories exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+            return {
+                "status": "SUCCESS",
+                "output": f"Successfully wrote {len(content)} characters to '{target}'.",
+                "diff": diff if diff else "No changes detected."
+            }
+        except Exception as e:
+            return {"status": "ERROR", "reason": str(e)}
+
+    def _handle_python_eval(self, code: str) -> Dict[str, Any]:
+        """Evaluates python mathematical or algorithmic expressions."""
+        try:
+            result = eval(code, {"__builtins__": {}}, {})
+            return {"status": "SUCCESS", "output": f"Evaluated result: {result}"}
+        except Exception as e:
+            return {"status": "ERROR", "reason": f"Eval failure: {str(e)}"}
 
     def execute_tool(
         self,
         tool_name: str,
         agent_id: str,
         permission_level: PermissionLevel,
-        target: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """Validates tool permissions and executes handler if authorized."""
-        
+        """Validates tool permissions through PolicyEngine before execution dispatch."""
         if tool_name not in self.registry:
-            return {
-                "status": "ERROR",
-                "reason": f"Tool '{tool_name}' is not registered in Tool Engine."
-            }
+            return {"status": "DENIED", "reason": f"Tool '{tool_name}' not registered."}
 
-        tool = self.registry[tool_name]
-        
-        # Zero-Trust Security Gate
-        is_allowed = self.security_engine.authorize_action(
+        tool_meta = self.registry[tool_name]
+        required_action = tool_meta["action"]
+        target = kwargs.get("target")
+
+        # 1. Zero-Trust Security Policy Gate
+        authorized = self.policy.authorize_action(
             agent_id=agent_id,
             permission_level=permission_level,
-            action=tool["action_type"],
+            action=required_action,
             target=target
         )
 
-        if not is_allowed:
+        if not authorized:
             return {
-                "status": "BLOCKED_BY_SECURITY",
-                "tool_name": tool_name,
-                "reason": f"Execution of tool '{tool_name}' violated security policy."
+                "status": "DENIED",
+                "reason": f"Action '{required_action.value}' not authorized for agent '{agent_id}' under permission level {permission_level.value}."
             }
 
-        # Execute registered tool handler
-        try:
-            result = tool["handler"](target=target, **kwargs)
-            return {
-                "status": "SUCCESS",
-                "tool_name": tool_name,
-                "output": result
-            }
-        except Exception as e:
-            return {
-                "status": "EXECUTION_ERROR",
-                "tool_name": tool_name,
-                "error": str(e)
-            }
+        # 2. Handler Execution Dispatch
+        handler = tool_meta["handler"]
+        if tool_name == "file_reader":
+            return handler(target=kwargs.get("target", ""))
+        elif tool_name == "file_writer":
+            return handler(target=kwargs.get("target", ""), content=kwargs.get("content", ""))
+        elif tool_name == "python_eval":
+            return handler(code=kwargs.get("code", ""))
 
-    # Default Tool Handlers
-    @staticmethod
-    def _tool_read_file(target: Optional[str] = None, **kwargs) -> str:
-        if not target:
-            raise ValueError("Target file path is required.")
-        path = Path(target)
-        if not path.exists():
-            return f"File not found: {target}"
-        return path.read_text(encoding="utf-8")[:500]  # Return preview
+        return {"status": "ERROR", "reason": "Unknown execution routing."}
 
-    @staticmethod
-    def _tool_python_eval(code: str = "", **kwargs) -> str:
-        # Evaluates simple math/expressions safely
-        result = eval(code, {"__builtins__": {}})
-        return f"Evaluated result: {result}"
 
 if __name__ == "__main__":
+    print("\n--- Testing ToolEngine with File Writer & Patch Generator ---")
     tools = ToolEngine()
     
-    print("\n--- Testing Tool Execution Engine ---")
+    test_file = "sandbox_test.py"
+    v1_code = "print('Hello UGOS v1.0')\n"
+    v2_code = "print('Hello UGOS v1.0 Engine')\n# Added patch line\n"
 
-    # Test 1: Standard agent reading execution.py via file_reader tool (Should SUCCEED)
+    # Test 1: Write initial version
     res1 = tools.execute_tool(
-        tool_name="file_reader",
+        tool_name="file_writer",
         agent_id="ag_dev_01",
         permission_level=PermissionLevel.STANDARD_EXEC,
-        target="src/ugos/engines/execution.py"
+        target=test_file,
+        content=v1_code
     )
-    print("\nResult 1 (Read File):", res1["status"])
+    print("\n[Write V1 Status]:", res1["status"])
+    print("[V1 Diff Patch]:\n" + res1.get("diff", ""))
 
-    # Test 2: Standard agent calling python_eval tool (Requires EXECUTE_SHELL -> Should DENY)
+    # Test 2: Modify version and generate patch diff
     res2 = tools.execute_tool(
-        tool_name="python_eval",
+        tool_name="file_writer",
         agent_id="ag_dev_01",
         permission_level=PermissionLevel.STANDARD_EXEC,
-        code="2 + 2"
+        target=test_file,
+        content=v2_code
     )
-    print("\nResult 2 (Python Eval - Standard Perms):", res2)
+    print("[Write V2 Status]:", res2["status"])
+    print("[V2 Unified Patch Diff]:\n" + res2.get("diff", ""))
 
-    # Test 3: Elevated agent calling python_eval tool (Should ALLOW & SUCCEED)
-    res3 = tools.execute_tool(
-        tool_name="python_eval",
-        agent_id="ag_admin_01",
-        permission_level=PermissionLevel.ELEVATED,
-        code="10 * 5"
-    )
-    print("\nResult 3 (Python Eval - Elevated Perms):", res3)
+    # Clean up temporary test file
+    if Path(test_file).exists():
+        Path(test_file).unlink()
+        print("Cleaned up temporary test file 'sandbox_test.py'.\n")
