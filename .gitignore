@@ -6,3 +6,16 @@ __pycache__/
 *.egg-info/
 .venv/
 env/
+
+# SQLite Database Files
+*.db
+*.db-journal
+
+# Python Bytecode & Caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# System / IDE Files
+.vscode/
+.idea/
