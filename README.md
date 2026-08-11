@@ -2,13 +2,77 @@
 
 
 
-!\[Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
-
-!\[Test Suite](https://img.shields.io/badge/pytest-11%2F11%20passing-brightgreen.svg)
-
-!\[License](https://img.shields.io/badge/license-MIT-green.svg)
+<div align="center">
 
 
+
+\# 🤖 UGOS v1.0
+
+\### \*User-Guided Agent Operating System\*
+
+
+
+\*\*An enterprise-grade, zero-trust execution engine and runtime environment for autonomous AI agents.\*\*
+
+
+
+<p align="center">
+
+&#x20; <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge\&logo=python\&logoColor=white" alt="Python 3.12"></a>
+
+&#x20; <a href="https://docs.pytest.org/"><img src="https://img.shields.io/badge/PyTest-11%2F11%20Passing-success?style=for-the-badge\&logo=pytest\&logoColor=white" alt="Test Suite"></a>
+
+&#x20; <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Sandbox-Docker%20%7C%20Process-2496ED?style=for-the-badge\&logo=docker\&logoColor=white" alt="Docker Sandboxing"></a>
+
+&#x20; <a href="https://sqlite.org/"><img src="https://img.shields.io/badge/Storage-SQLite%203-003B57?style=for-the-badge\&logo=sqlite\&logoColor=white" alt="SQLite Storage"></a>
+
+&#x20; <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"></a>
+
+</p>
+
+
+
+\---
+
+
+
+\[Key Subsystems](#-key-architecture--subsystems) •
+
+\[Quickstart](#-quickstart--installation) •
+
+\[Demo Workflow](#-live-demo-workflow) •
+
+\[Specification](#-specification--design-docs)
+
+
+
+\---
+
+
+
+</div>
+
+
+
+\## 🌟 Overview
+
+
+
+\*\*UGOS (User-Guided Agent Operating System)\*\* is an open-source operating system runtime designed specifically for AI agents. Just as traditional operating systems manage hardware resources for applications, UGOS provides \*\*Zero-Trust Security, DAG Task Orchestration, Sandboxed Container Execution, Persistent Dual-Tier Memory, and Fallback LLM Routing\*\* to guarantee safe and deterministic agent behavior.
+
+
+
+\### 🛡️ Core Pillars
+
+\* \*\*🔐 Zero-Trust Security Gate:\*\* Fine-grained policy enforcement (`PolicyEngine`) restricting agent file system and shell operations before execution.
+
+\* \*\*⚡ DAG Task Orchestrator:\*\* Dependency-resolved Directed Acyclic Graph execution for complex multi-agent workflows.
+
+\* \*\*📦 Sandboxed Execution Engine:\*\* Containerized isolation via Docker with graceful process-level fallback.
+
+\* \*\*💾 Persistent Dual-Tier Memory:\*\* SQLite-backed episodic logs and semantic facts retained across sessions (`ugos\_memory.db`).
+
+\* \*\*🔄 Circuit-Breaker LLM Router:\*\* Automatic failover between primary cloud endpoints and 100% offline local models (e.g., Ollama).
 
 \*\*UGOS (Unified Agent Operating System)\*\* is an enterprise-grade, zero-trust framework for orchestrating autonomous AI agents, sandboxed tool executions, multi-provider LLM routing, and persistent episodic/semantic memory.
 
