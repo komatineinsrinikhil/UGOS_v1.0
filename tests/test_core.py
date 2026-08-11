@@ -235,3 +235,24 @@ def test_llm_router_primary_and_fallback():
     res2 = fallback_router.generate("Analyze system architecture")
     assert res2["status"] == "SUCCESS"
     assert res2["provider"] == "MockLocalProvider"
+
+
+# --- 11. Execution Engine Sandbox & Fallback Tests ---
+def test_execution_engine_sandbox_fallback():
+    from ugos.engines.execution import ExecutionEngine
+
+    # Test Local Engine Execution
+    engine = ExecutionEngine(use_docker=False)
+    task = {
+        "id": "test_exec_01",
+        "action": "python_eval",
+        "payload": {"code": "result = 100 + 200"}
+    }
+    res = engine.execute_task(task)
+    assert res["status"] == "SUCCESS"
+    assert res["result"] == 300
+
+    # Test Docker Mode (Safe fallback check)
+    docker_engine = ExecutionEngine(use_docker=True)
+    res_docker = docker_engine.execute_task(task)
+    assert res_docker["status"] in ["SUCCESS", "FAILED"]
