@@ -213,3 +213,25 @@ def test_sqlite_memory_engine_persistence():
             test_db.unlink()
         except Exception:
             pass
+
+
+# --- 10. LLM Router & Fallback Chain Tests ---
+def test_llm_router_primary_and_fallback():
+    from ugos.llm.router import LLMRouter, SimulatedAPIProvider, MockLLMProvider
+
+    # Scenario 1: Primary succeeds
+    primary = SimulatedAPIProvider(model_id="gpt-4o", should_fail=False)
+    fallback = MockLLMProvider()
+    router = LLMRouter(primary_provider=primary, fallback_providers=[fallback])
+    
+    res1 = router.generate("Analyze system architecture")
+    assert res1["status"] == "SUCCESS"
+    assert res1["provider"] == "SimulatedAPIProvider"
+
+    # Scenario 2: Primary fails -> Fallback succeeds
+    failing_primary = SimulatedAPIProvider(model_id="gpt-4o", should_fail=True)
+    fallback_router = LLMRouter(primary_provider=failing_primary, fallback_providers=[fallback])
+    
+    res2 = fallback_router.generate("Analyze system architecture")
+    assert res2["status"] == "SUCCESS"
+    assert res2["provider"] == "MockLocalProvider"
