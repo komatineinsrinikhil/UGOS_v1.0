@@ -9,13 +9,25 @@ import sys
 import logging
 import subprocess
 import shutil
-from typing import Dict, Any, Optional
+import uuid
+from enum import Enum
+from typing import Dict, Any, Union, Optional
 from pathlib import Path
 
 # Ensure project root is in path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+
+
+class TaskState(Enum):
+    """Task execution lifecycle states."""
+    PENDING = "PENDING"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    ERROR = "ERROR"
 
 
 class ExecutionEngine:
@@ -25,6 +37,7 @@ class ExecutionEngine:
         self.use_docker = use_docker
         self.docker_image = docker_image
         self.docker_available = shutil.which("docker") is not None
+        self.tasks: Dict[str, Dict[str, Any]] = {}
         
         if self.use_docker and not self.docker_available:
             logging.warning("⚠️ Docker requested but docker binary not found in PATH. Falling back to local execution.")
@@ -32,24 +45,61 @@ class ExecutionEngine:
 
         logging.info(f"Initialized Execution Engine (Docker Mode: {self.use_docker})")
 
-    def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes a single task item."""
-        task_id = task.get("id", "task_unknown")
-        action = task.get("action", "noop")
-        payload = task.get("payload", {})
+    def submit_task(self, task: Dict[str, Any]) -> str:
+        """Submits a task for tracking and returns its task_id."""
+        task_id = task.get("id", f"task_{uuid.uuid4().hex[:8]}")
+        task["id"] = task_id
+        
+        self.tasks[task_id] = {
+            "task": task,
+            "state": TaskState.PENDING,
+            "result": None
+        }
+        return task_id
+
+    def get_task_status(self, task_id: str) -> Dict[str, Any]:
+        """Retrieves task state and execution output."""
+        if task_id in self.tasks:
+            return self.tasks[task_id]
+        return {"state": TaskState.ERROR, "error": f"Task ID '{task_id}' not found"}
+
+    def execute_task(self, task: Union[Dict[str, Any], str]) -> Dict[str, Any]:
+        """Executes a task item (accepts a task dictionary or a task_id string)."""
+        if isinstance(task, str):
+            task_id = task
+            task_dict = self.tasks.get(task_id, {}).get("task", {"id": task_id})
+        else:
+            task_dict = task
+            task_id = task_dict.get("id", "task_unknown")
+
+        action = task_dict.get("action", "noop")
+        payload = task_dict.get("payload", {})
 
         logging.info(f"Executing [{task_id}] -> Action: '{action}'")
 
         if action == "python_eval":
-            return self._execute_python(payload.get("code", ""), task_id)
+            res = self._execute_python(payload.get("code", ""), task_id)
         elif action == "shell_cmd":
-            return self._execute_shell(payload.get("command", ""), task_id)
+            res = self._execute_shell(payload.get("command", ""), task_id)
         else:
-            return {
+            res = {
                 "status": "SUCCESS",
                 "task_id": task_id,
-                "result": f"Executed action '{action}' with payload keys: {list(payload.keys())}"
+                "result": {
+                    "status": "SUCCESS",
+                    "details": f"Executed action '{action}' with payload keys: {list(payload.keys())}"
+                }
             }
+
+        # Inject state metadata for orchestrator and test compatibility
+        state = TaskState.COMPLETED if res.get("status") == "SUCCESS" else TaskState.FAILED
+        res["state"] = state
+
+        if task_id in self.tasks:
+            self.tasks[task_id]["result"] = res
+            self.tasks[task_id]["state"] = state
+
+        return res
 
     def _execute_python(self, code: str, task_id: str) -> Dict[str, Any]:
         """Executes Python code either locally or inside a Docker sandbox container."""
@@ -57,7 +107,6 @@ class ExecutionEngine:
             return self._execute_in_docker(f"python -c \"{code}\"", task_id)
         
         try:
-            # Local safe evaluation
             local_scope = {}
             exec(code, {}, local_scope)
             return {
@@ -90,8 +139,8 @@ class ExecutionEngine:
         """Executes command inside an isolated Docker container."""
         docker_cmd = [
             "docker", "run", "--rm",
-            "--network", "none",  # Network sandbox isolation
-            "--memory", "256m",   # Memory cap
+            "--network", "none",
+            "--memory", "256m",
             self.docker_image,
             "sh", "-c", command
         ]
@@ -110,18 +159,6 @@ class ExecutionEngine:
 
 if __name__ == "__main__":
     print("\n--- Testing Execution Engine (Local & Sandbox Detection) ---")
-    
-    # 1. Local Execution Engine Test
     engine = ExecutionEngine(use_docker=False)
-    sample_task = {
-        "id": "tsk_101",
-        "action": "python_eval",
-        "payload": {"code": "result = 21 * 2"}
-    }
-    res = engine.execute_task(sample_task)
-    print("\n[Local Execution Result]:", res)
-
-    # 2. Docker Sandbox Mode Test (Falls back safely if Docker is absent)
-    docker_engine = ExecutionEngine(use_docker=True)
-    res_docker = docker_engine.execute_task(sample_task)
-    print("\n[Docker Engine Result]:", res_docker)
+    tid = engine.submit_task({"action": "python_eval", "payload": {"code": "result = 21 * 2"}})
+    print("\n[Submitted Task Result]:", engine.execute_task(tid))
