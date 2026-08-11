@@ -105,6 +105,9 @@ def test_tool_engine_execution():
     assert res3["status"] == "SUCCESS"
     assert "Evaluated result: 6" in res3["output"]
 
+
+
+
 from ugos.core.memory import MemoryEngine
 
 # --- 6. Memory Architecture Tests ---
@@ -122,3 +125,22 @@ def test_memory_engine_episodic_and_semantic():
     memory.global_semantic.set_fact("db_port", 5432, tags=["database", "config"])
     facts = memory.global_semantic.search_by_tag("database")
     assert facts.get("db_port") == 5432
+
+
+
+from ugos.agents.specialized import SoftwareEngineerAgent, SecurityAuditAgent
+
+# --- 7. Specialized Agent Tests ---
+def test_specialized_agents_permissions():
+    tools = ToolEngine()
+    swe = SoftwareEngineerAgent(agent_id="ag_test_swe")
+    sec = SecurityAuditAgent(agent_id="ag_test_sec")
+
+    # SWE agent reads file -> SUCCESS
+    res_swe = swe.inspect_code(tools, "src/ugos/engines/execution.py")
+    assert res_swe["status"] == "SUCCESS"
+
+    # Security agent performs elevated eval -> SUCCESS
+    res_sec = sec.audit_expression(tools, "10 * 10")
+    assert res_sec["status"] == "SUCCESS"
+    assert "100" in res_sec["output"]
