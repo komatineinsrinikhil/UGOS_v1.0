@@ -104,3 +104,21 @@ def test_tool_engine_execution():
     )
     assert res3["status"] == "SUCCESS"
     assert "Evaluated result: 6" in res3["output"]
+
+from ugos.core.memory import MemoryEngine
+
+# --- 6. Memory Architecture Tests ---
+def test_memory_engine_episodic_and_semantic():
+    memory = MemoryEngine()
+    
+    # Test Episodic Session Logging
+    session = memory.get_or_create_session("test_sess_01")
+    session.log_event("agent_test", "action_1", {"status": "ok"})
+    history = session.get_recent_history(limit=1)
+    assert len(history) == 1
+    assert history[0]["action"] == "action_1"
+
+    # Test Semantic Tagged Context Retrieval
+    memory.global_semantic.set_fact("db_port", 5432, tags=["database", "config"])
+    facts = memory.global_semantic.search_by_tag("database")
+    assert facts.get("db_port") == 5432
