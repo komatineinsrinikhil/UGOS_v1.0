@@ -2,22 +2,6 @@
 
 
 
-<p align="center">
-
-&#x20; <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.12-blue.svg" alt="Python 3.12"></a>
-
-&#x20; \&nbsp;
-
-&#x20; <a href="https://docs.pytest.org/"><img src="https://img.shields.io/badge/pytest-11%2F11%20passing-brightgreen.svg" alt="Test Suite"></a>
-
-&#x20; \&nbsp;
-
-&#x20; <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-
-</p>
-
-
-
 !\[Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
 
 !\[Test Suite](https://img.shields.io/badge/pytest-11%2F11%20passing-brightgreen.svg)
