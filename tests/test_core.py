@@ -93,7 +93,7 @@ def test_tool_engine_execution():
         permission_level=PermissionLevel.STANDARD_EXEC,
         code="1 + 1"
     )
-    assert res2["status"] == "BLOCKED_BY_SECURITY"
+    assert res2["status"] == "DENIED"
 
     # Python eval tool allowed under ELEVATED
     res3 = tools.execute_tool(
@@ -144,3 +144,37 @@ def test_specialized_agents_permissions():
     res_sec = sec.audit_expression(tools, "10 * 10")
     assert res_sec["status"] == "SUCCESS"
     assert "100" in res_sec["output"]
+
+
+# --- 8. Tool Engine File Writer & Diff Tests ---
+def test_tool_engine_file_writer_diff():
+    tools = ToolEngine()
+    target_file = "test_diff_sample.py"
+    
+    # Write version 1
+    res1 = tools.execute_tool(
+        tool_name="file_writer",
+        agent_id="ag_test_writer",
+        permission_level=PermissionLevel.STANDARD_EXEC,
+        target=target_file,
+        content="x = 10\n"
+    )
+    assert res1["status"] == "SUCCESS"
+    assert "diff" in res1
+    assert "+x = 10" in res1["diff"]
+
+    # Write version 2 (Generates modification diff)
+    res2 = tools.execute_tool(
+        tool_name="file_writer",
+        agent_id="ag_test_writer",
+        permission_level=PermissionLevel.STANDARD_EXEC,
+        target=target_file,
+        content="x = 20\ny = 30\n"
+    )
+    assert res2["status"] == "SUCCESS"
+    assert "-x = 10" in res2["diff"]
+    assert "+x = 20" in res2["diff"]
+
+    # Clean up file
+    if Path(target_file).exists():
+        Path(target_file).unlink()
