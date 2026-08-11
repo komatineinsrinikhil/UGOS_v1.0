@@ -2,11 +2,11 @@
 
 
 
-\[!\[Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+!\[Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
 
-\[!\[Test Suite](https://img.shields.io/badge/pytest-11%2F11%20passing-brightgreen.svg)]()
+!\[Test Suite](https://img.shields.io/badge/pytest-11%2F11%20passing-brightgreen.svg)
 
-\[!\[License](https://img.shields.io/badge/license-MIT-green.svg)]()
+!\[License](https://img.shields.io/badge/license-MIT-green.svg)
 
 
 
