@@ -318,7 +318,49 @@ UGOS defines 6 operational security levels ($L\_0$ to $L\_5$):
 
 
 
-\## 8. SPECIFICATION REVISION HISTORY
+\## 8. MODULE INDEX \& RESERVED NUMBERING
+
+
+
+The specification directory uses fixed two-digit module prefixes. Not every number is currently populated; the table below is the canonical reference so contributors do not mistake a reserved-but-empty module for a missing one.
+
+
+
+| Prefix | Module | Status |
+
+|---|---|---|
+
+| `00` | Master | Active |
+
+| `01` | Foundation | Active |
+
+| `02` | Architecture | Active |
+
+| `03` | Engines | Active |
+
+| `04` | Agents | Active |
+
+| `05` | Workflows | Active |
+
+| `06` | Memory \& Knowledge | Active |
+
+| `07` | Tools \& Plugins | Reserved — folder created, no spec files drafted yet |
+
+| `08` | Governance \& Security | Active |
+
+| `09` | Evaluation | Reserved — folder created, no spec files drafted yet |
+
+| `10` | SDK | Active |
+
+| `11` | Testing | Reserved — folder created, no spec files drafted yet |
+
+
+
+\---
+
+
+
+\## 9. SPECIFICATION REVISION HISTORY
 
 
 
@@ -327,6 +369,8 @@ UGOS defines 6 operational security levels ($L\_0$ to $L\_5$):
 |---|---|---|---|
 
 | 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of Stage 1 Master Specification |
+
+| 1.0.1-DRAFT | 2026-08-12 | Core Engineering Architecture Group | Added Section 8 (Module Index \& Reserved Numbering) documenting the intentional 07/09/11 gaps; renumbered Revision History to Section 9. |
 
 
 
