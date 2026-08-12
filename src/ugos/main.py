@@ -30,11 +30,22 @@ from ugos.agents.specialized import SoftwareEngineerAgent
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
+def print_status():
+    """Displays a quick summary of the active core engines without running a workflow."""
+    print("\n🟢 UGOS v1.0 Core Runtime Status")
+    print(" Active Engines: Execution (100) | Orchestrator (105) | Tools (107) | Security (402) | Memory (300)\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="UGOS v1.0 Unified Agent Operating System")
     parser.add_argument("--workflow", type=str, default="demo_workflow_01", help="Workflow ID to execute")
     parser.add_argument("--use-docker", action="store_true", help="Enable Docker sandbox execution")
+    parser.add_argument("--status", action="store_true", help="Print engine status and exit (no workflow run)")
     args = parser.parse_args()
+
+    if args.status:
+        print_status()
+        return
 
     print("\n" + "=" * 65)
     print("🚀 Launching UGOS v1.0 Unified Agent Operating System")
