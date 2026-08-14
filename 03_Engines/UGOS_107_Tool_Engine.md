@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Action Layer
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Tool Developers, Security Engineers, Core Developers
 
@@ -57,4 +57,4 @@ The Tool Engine discovers, validates, permissions, and safely executes external 
 
 ## 4. REVISION HISTORY
 
-VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Tool Engine Specification
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Tool Engine Specification

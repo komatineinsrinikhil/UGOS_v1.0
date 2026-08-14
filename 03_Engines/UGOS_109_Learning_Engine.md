@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Optimization
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, AI/ML Engineers
 
@@ -52,7 +52,7 @@ The Learning Engine analyzes historical task execution logs and evaluation score
 
 }
 
-3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Learning Engine Specification**# UGOS DOCUMENT METADATA**
+3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Learning Engine Specification**# UGOS DOCUMENT METADATA**
 
 **Document ID: UGOS_109_Learning_Engine**
 
@@ -62,7 +62,7 @@ The Learning Engine analyzes historical task execution logs and evaluation score
 
 **Category: Core Engine / Optimization**
 
-**Owner: Core Engineering Architecture Group**
+**Owner: Komatineni Sri Nikhil**
 
 **Target Audience: Core Engineers, AI/ML Engineers**
 
@@ -104,4 +104,4 @@ The Learning Engine analyzes historical task execution logs and evaluation score
 
 **}**
 
-**3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Learning Engine Specification**
+**3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Learning Engine Specification**

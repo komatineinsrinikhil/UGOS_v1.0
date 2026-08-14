@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Output Formatting
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Frontend Integrators, API Engineers, UX Designers
 
@@ -67,4 +67,4 @@ The Communication Engine formats, structures, and streams agent reasoning output
 }
 ```
 
-3. STREAMING PROTOCOLFor WebSocket connections, outputs must stream using Server-Sent Events (SSE) / JSON frames with chunk types THINKING, CONTENT_DELTA, ARTIFACT_DELTA, and FINAL_PAYLOAD.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Communication Engine Specification
+3. STREAMING PROTOCOLFor WebSocket connections, outputs must stream using Server-Sent Events (SSE) / JSON frames with chunk types THINKING, CONTENT_DELTA, ARTIFACT_DELTA, and FINAL_PAYLOAD.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Communication Engine Specification

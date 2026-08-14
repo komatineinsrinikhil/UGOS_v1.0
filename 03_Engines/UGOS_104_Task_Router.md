@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Routing
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Systems Architects, Multi-Agent Developers
 
@@ -79,4 +79,4 @@ Capability Filter: Filter agent registry for agents possessing 100% of required_
 
 ## 4. REVISION HISTORY
 
-VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Task Router Specification
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Task Router Specification

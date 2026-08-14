@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Architecture / System Context
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Systems Architects, Integration Engineers, Core Developers
 
@@ -90,4 +90,4 @@ This document defines the high-level system boundary for UGOS v1.0, identifying 
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of System Context |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of System Context |

@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Foundation / Governance
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Systems Architects, Core Developers, Subsystem Lead Engineers
 

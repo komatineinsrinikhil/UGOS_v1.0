@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Communication
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, API Developers, NLP/LLM Engineers
 
@@ -85,4 +85,4 @@ The complexity score ($C$) is calculated using weighted parameters:$$C = (W_t \t
 
 ## 4. REVISION HISTORY
 
-VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Intent Engine Specification
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Intent Engine Specification

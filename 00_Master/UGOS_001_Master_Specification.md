@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core / Architecture
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: All UGOS Core Engineers, Integrators, and Subsystem Authors
 
@@ -294,6 +294,6 @@ The specification directory uses fixed two-digit module prefixes. Not every numb
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of Stage 1 Master Specification |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of Stage 1 Master Specification |
 
-| 1.0.1-DRAFT | 2026-08-12 | Core Engineering Architecture Group | Added Section 8 (Module Index & Reserved Numbering) documenting the intentional 07/09/11 gaps; renumbered Revision History to Section 9. |
+| 1.0.1-DRAFT | 2026-08-12 | Komatineni Sri Nikhil | Added Section 8 (Module Index & Reserved Numbering) documenting the intentional 07/09/11 gaps; renumbered Revision History to Section 9. |

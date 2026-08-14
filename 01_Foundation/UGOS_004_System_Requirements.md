@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Foundation / Requirements
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineering, QA Leads, Systems Architects
 

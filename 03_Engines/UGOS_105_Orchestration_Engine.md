@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / System Control
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Systems Architects, Backend Developers
 
@@ -62,4 +62,4 @@ The Orchestration Engine is the primary system controller of UGOS. It maintains 
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of Orchestration Engine Specification |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of Orchestration Engine Specification |

@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Standard / Governance
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Systems Architects, Core Developers, Subsystem Lead Engineers
 
@@ -74,4 +74,4 @@ Logging schemas, trace attributes, operational KPIs, and health check definition
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Architect Name | Initial Draft Creation |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Draft Creation |

@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Architecture / Lifecycle
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineering, Integration Testers, Systems Architects
 
@@ -76,4 +76,4 @@ User           Comm Layer    Intent Engine   Orchestrator    Planner/Agent     T
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of Request Lifecycle Protocol |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of Request Lifecycle Protocol |

@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Planning
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Multi-Agent Developers, Systems Architects
 
@@ -81,4 +81,4 @@ Cycle Detection: The Planning Engine must validate that node dependencies contai
 
 ## 4. REVISION HISTORY
 
-VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Planning Engine Specification
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Planning Engine Specification

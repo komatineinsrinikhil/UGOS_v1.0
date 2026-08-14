@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Architecture / State Machine
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, QA Testers, System Architects
 
@@ -78,4 +78,4 @@ v                   v                   v
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of Task State Model |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of Task State Model |

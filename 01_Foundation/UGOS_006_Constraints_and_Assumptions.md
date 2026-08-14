@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Foundation / System Scope
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Product Managers, Systems Architects, Integration Engineers
 

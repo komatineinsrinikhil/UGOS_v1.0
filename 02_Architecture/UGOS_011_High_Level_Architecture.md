@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Architecture / Core Blueprint
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Subsystem Leads, System Architects
 
@@ -110,4 +110,4 @@ Memory System (UGOS_300) | Security & Governance (UGOS_700) | Evaluation (UGOS_1
 
 |---|---|---|---|
 
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial Release of High-Level Architecture |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial Release of High-Level Architecture |

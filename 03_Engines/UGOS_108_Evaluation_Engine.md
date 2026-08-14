@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Verification
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: QA Engineers, AI Safety Engineers, Systems Architects
 
@@ -57,4 +57,4 @@ The Evaluation Engine inspects task outputs prior to final delivery, checking ag
 }
 ```
 
-3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Evaluation Engine Specification
+3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Evaluation Engine Specification

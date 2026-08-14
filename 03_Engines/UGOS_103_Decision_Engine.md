@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Core Engine / Decision Intelligence
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Governance Engineers, Systems Architects
 
@@ -77,4 +77,4 @@ The Decision Engine evaluates competing action paths, performs cost-benefit and 
 }
 ```
 
-3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Decision Engine Specification
+3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Komatineni Sri NikhilInitial Release of Decision Engine Specification

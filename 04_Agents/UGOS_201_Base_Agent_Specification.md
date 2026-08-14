@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Agent Architecture / Core Contract
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: Core Engineers, Systems Architects, Agent Developers
 
@@ -238,5 +238,5 @@ indicate an agent operating above its privilege level or a misconfigured task.
 
 | Version | Date | Author | Summary of Changes |
 |---|---|---|---|
-| 1.0.0-DRAFT | 2026-08-09 | Core Engineering Architecture Group | Initial file created; content was a duplicate of UGOS_210. |
-| 1.0.1-DRAFT | 2026-08-14 | Core Engineering Architecture Group | Rewritten as the real base agent contract. Aligned privilege levels with the L0–L5 hierarchy in UGOS_400/UGOS_402. Documented known deviations. |
+| 1.0.0-DRAFT | 2026-08-09 | Komatineni Sri Nikhil | Initial file created; content was a duplicate of UGOS_210. |
+| 1.0.1-DRAFT | 2026-08-14 | Komatineni Sri Nikhil | Rewritten as the real base agent contract. Aligned privilege levels with the L0–L5 hierarchy in UGOS_400/UGOS_402. Documented known deviations. |

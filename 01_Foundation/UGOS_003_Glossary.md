@@ -8,7 +8,7 @@ Status: APPROVED
 
 Category: Foundation / Terminology
 
-Owner: Core Engineering Architecture Group
+Owner: Komatineni Sri Nikhil
 
 Target Audience: All UGOS Developers, Integrators, and Technical Writers
 
