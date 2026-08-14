@@ -1,362 +1,198 @@
-\# UGOS v1.0 — Unified Agent Operating System Specification
+# UGOS v1.0
 
+**Unified Agent Operating System** — a zero-trust runtime for AI agents.
 
+Most AI tools are one assistant you have to watch. UGOS is the layer that makes
+watching unnecessary: it decides which agent handles a task, checks every action
+against a permission policy *before* it runs, remembers what happened across
+sessions, and keeps working when the model it depends on goes down.
 
-<div align="center">
+The security engine is not a wrapper around the agent. It sits inside the loop.
 
+![UGOS refusing to read a .env file](docs/ugos-blocked-env.png)
 
-
-\# 🤖 UGOS v1.0
-
-\### \*User-Guided Agent Operating System\*
-
-
-
-\*\*An enterprise-grade, zero-trust execution engine and runtime environment for autonomous AI agents.\*\*
-
-
-
-<p align="center">
-
-&#x20; <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge\&logo=python\&logoColor=white" alt="Python 3.12"></a>
-
-&#x20; <a href="https://docs.pytest.org/"><img src="https://img.shields.io/badge/PyTest-11%2F11%20Passing-success?style=for-the-badge\&logo=pytest\&logoColor=white" alt="Test Suite"></a>
-
-&#x20; <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Sandbox-Docker%20%7C%20Process-2496ED?style=for-the-badge\&logo=docker\&logoColor=white" alt="Docker Sandboxing"></a>
-
-&#x20; <a href="https://sqlite.org/"><img src="https://img.shields.io/badge/Storage-SQLite%203-003B57?style=for-the-badge\&logo=sqlite\&logoColor=white" alt="SQLite Storage"></a>
-
-&#x20; <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge" alt="License"></a>
-
-</p>
-
-
-
-\---
-
-
-
-\[Key Subsystems](#-key-architecture--subsystems) •
-
-\[Quickstart](#-quickstart--installation) •
-
-\[Demo Workflow](#-live-demo-workflow) •
-
-\[Specification](#-specification--design-docs)
-
-
-
-\---
-
-
-
-</div>
-
-
-
-\## 🌟 Overview
-
-
-
-\*\*UGOS (User-Guided Agent Operating System)\*\* is an open-source operating system runtime designed specifically for AI agents. Just as traditional operating systems manage hardware resources for applications, UGOS provides \*\*Zero-Trust Security, DAG Task Orchestration, Sandboxed Container Execution, Persistent Dual-Tier Memory, and Fallback LLM Routing\*\* to guarantee safe and deterministic agent behavior.
-
-
-
-\### 🛡️ Core Pillars
-
-\* \*\*🔐 Zero-Trust Security Gate:\*\* Fine-grained policy enforcement (`PolicyEngine`) restricting agent file system and shell operations before execution.
-
-\* \*\*⚡ DAG Task Orchestrator:\*\* Dependency-resolved Directed Acyclic Graph execution for complex multi-agent workflows.
-
-\* \*\*📦 Sandboxed Execution Engine:\*\* Containerized isolation via Docker with graceful process-level fallback.
-
-\* \*\*💾 Persistent Dual-Tier Memory:\*\* SQLite-backed episodic logs and semantic facts retained across sessions (`ugos\_memory.db`).
-
-\* \*\*🔄 Circuit-Breaker LLM Router:\*\* Automatic failover between primary cloud endpoints and 100% offline local models (e.g., Ollama).
-
-\*\*UGOS (Unified Agent Operating System)\*\* is an enterprise-grade, zero-trust framework for orchestrating autonomous AI agents, sandboxed tool executions, multi-provider LLM routing, and persistent episodic/semantic memory.
-
-
-
-\---
-
-
-
-\## 🏛️ Architecture Overview
-
-┌───────────────────────────┐
-
-&#x20;                   │   CLI Entry Point Driver   │
-
-&#x20;                   │     (src/ugos/main.py)    │
-
-&#x20;                   └─────────────┬─────────────┘
-
-&#x20;                                 │
-
-&#x20;      ┌──────────────────────────┼──────────────────────────┐
-
-&#x20;      ▼                          ▼                          ▼
-
-
-
-┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
-
-│   DAG Orchestrator │     │  Zero-Trust Engine │     │ Memory Engine (DB) │
-
-│ (orchestrator.py)  │     │    (policy.py)     │     │    (memory.py)     │
-
-└──────────┬─────────┘     └──────────┬─────────┘     └──────────┬─────────┘
-
-│                          │                          │
-
-▼                          ▼                          ▼
-
-┌────────────────────┐     ┌────────────────────┐     ┌────────────────────┐
-
-│ Execution Sandbox  │     │ Specialized Agents │     │ LLM Provider Router│
-
-│   (execution.py)   │     │  (specialized.py)  │     │    (router.py)     │
-
-└────────────────────┘     └────────────────────┘     └────────────────────┘
-
-
-
+*Asked to read `.env` and hand over an API key, the model lists the folder,
+requests the file — and the policy engine refuses before a byte is read.*
 
 ---
 
+## Quick start
 
+**Requirements:** Python 3.10+ (tested on 3.12). A model to think with — either
+[Ollama](https://ollama.com) running locally, or a free API key.
 
-\## ⚙️ Core Subsystem Specifications
+```bash
+git clone https://github.com/komatineinsrinikhil/UGOS_v1.0.git
+cd UGOS_v1.0
+```
 
+**Pick a brain** in `ugos_config.py`:
 
+```python
+PRIMARY  = "gemini"     # ollama | gemini | groq | openrouter | lmstudio | jan | openai | together
+FALLBACK = "ollama"     # used if the primary fails
+```
 
-\### 1. Zero-Trust Security Policy Engine (`src/ugos/security/policy.py`)
+**Cloud brains need a key.** Copy `.env.example` to `.env` and fill in the one
+you use. `.env` is gitignored — keys never go in `ugos_config.py`, which is
+committed.
 
-\* Enforces role-based permissions (`RESTRICTED\_READ`, `STANDARD\_EXEC`, `ADMIN\_SUPERUSER`).
+```bash
+cp .env.example .env      # then edit it
+```
 
-\* Validates every tool action against a strict policy matrix before execution.
+**Local brains need the model downloaded:**
 
-\* Restricts filesystem access to dedicated sandbox paths (`/sandbox`, `./tmp`).
+```bash
+ollama pull phi3
+```
 
+**Run it:**
 
+| | |
+|---|---|
+| `UGOS - Web Page.bat` | Web interface at `localhost:8000` (Windows, double-click) |
+| `UGOS - Ask a Question.bat` | Single question in a console window |
+| `python ugos_web.py` | Same web interface, any platform |
+| `python run_my_task.py "your request"` | Single request from the command line |
+| `python src/ugos/main.py --status` | Engine status, no workflow |
 
-\### 2. DAG Workflow Orchestrator (`src/ugos/engines/orchestrator.py`)
-
-\* Resolves task dependency graphs topologically using Directed Acyclic Graphs (DAGs).
-
-\* Supports non-blocking task execution and dependency completion tracking.
-
-\* Captures step-by-step workflow state transitions (`PENDING` ➔ `RUNNING` ➔ `COMPLETED` / `FAILED`).
-
-
-
-\### 3. Containerized Sandbox Execution (`src/ugos/engines/execution.py`)
-
-\* Executes code inside isolated Docker containers (`python:3.12-slim` image with memory limits and zero network access).
-
-\* Features automatic local process fallback when Docker binary is absent from `PATH`.
-
-\* Polymorphic execution handling accepting direct payloads or task ID strings.
-
-
-
-\### 4. Persistent SQLite Memory Engine (`src/ugos/core/memory.py`)
-
-\* Dual-tier memory model: \*\*Episodic\*\* (interaction history) \& \*\*Semantic\*\* (facts \& metadata).
-
-\* Persistent storage backed by an embedded SQLite database (`ugos\_memory.db`).
-
-\* Tag-based indexing and keyword search retrieval.
-
-
-
-\### 5. Multi-Provider LLM Router (`src/ugos/llm/router.py`)
-
-\* Abstract LLM provider interface enabling pluggable LLM integrations (OpenAI, Anthropic, Ollama, Custom).
-
-\* Active circuit breaker pattern with automatic failover routing to secondary/mock providers on primary API failure.
-
-
-
-\### 6. Sandboxed Tool Engine (`src/ugos/core/tools.py`)
-
-\* Secure file patch engine generating standard Unified Diff format outputs.
-
-\* Isolated command runner preventing arbitrary system shell escalation.
-
-
-
-\---
-
-
-
-\## 📁 Repository Structure
-
-
-
-UGOS\_v1.0\_SPECIFICATION/
-
-├── src/
-
-│   └── ugos/
-
-│       ├── init.py
-
-│       ├── main.py                   # Unified CLI Entry Point
-
-│       ├── agents/
-
-│       │   ├── base.py               # Abstract Base Agent Class
-
-│       │   └── specialized.py        # SoftwareEngineerAgent \& SecurityAuditAgent
-
-│       ├── core/
-
-│       │   ├── memory.py             # SQLite Memory Engine
-
-│       │   └── tools.py              # File Writer \& Unified Diff Tool
-
-│       ├── engines/
-
-│       │   ├── execution.py          # Docker Sandbox / Local Execution Engine
-
-│       │   └── orchestrator.py       # DAG Workflow Coordinator
-
-│       ├── llm/
-
-│       │   └── router.py             # Multi-Provider Router with Failover
-
-│       └── security/
-
-│           └── policy.py             # Zero-Trust Policy Engine
-
-├── tests/
-
-│   └── test\_core.py                  # Complete 11-Part Integration Test Suite
-
-├── ugos\_memory.db                    # Persistent SQLite Memory Store
-
-└── README.md                         # Architecture Documentation
-
-
-\---
-
-
-
-\## 🚀 Quick Start \& CLI Usage
-
-
-
-\### Prerequisites
-
-\* \*\*Python 3.10+\*\* (Tested on Python 3.12)
-
-\* \*\*Docker\*\* (Optional: for containerized sandbox execution)
-
-
-
-\### 1. Execute Unified CLI Driver
-
-
-
-Run the default demo DAG workflow:
+No dependencies beyond the standard library.
 
 ---
 
+## What it does
 
+### Zero-trust security
 
-\## 🚀 Quick Start \& CLI Usage
+Every file action passes three checks, in order:
 
+1. **Permission level** — may this role perform this kind of action at all?
+2. **Forbidden pattern** — is the target a secret or system file? (`.env`,
+   `*.key`, `*.pem`, `id_rsa`, `.git/config`, `*credentials*`, `/etc/*`,
+   `C:\Windows\*`)
+3. **Sandbox boundary** — the target is fully resolved and must sit inside an
+   allowed root, so `../..` traversal cannot escape the project folder.
 
+Check 3 is what stops an agent rewriting `src/ugos/security/policy.py` — its own
+rules. Every decision, allowed or denied, lands in an audit log.
 
-\### Prerequisites
+Four permission levels: `READ_ONLY`, `STANDARD_EXEC`, `ELEVATED`, `SYSTEM_ADMIN`.
 
-\* \*\*Python 3.10+\*\* (Tested on Python 3.12)
+### The agent loop
 
-\* \*\*Docker\*\* (Optional: for containerized sandbox execution)
+`ugos_agent.py` runs the cycle that separates an agent from a chatbot:
+
+```
+model decides it needs something
+  → requests a tool
+  → PolicyEngine ALLOWS or DENIES
+  → the result, or the refusal, goes back to the model
+  → repeat until it has an answer
+```
 
+A refusal is fed back as an observation, so the model reports the block rather
+than failing silently or retrying. Read-only tools: `read_file`, `list_dir`,
+`system_status`. The loop caps steps, detects repeated requests, and tolerates
+models that wrap replies in prose or code fences.
 
+### Provider routing
 
-\### 1. Execute Unified CLI Driver
+Eight backends behind one interface. Seven share a single class, because
+everything except Gemini and Ollama speaks the OpenAI dialect — adding a ninth
+means adding an address to `ENDPOINTS`, not writing code.
 
+| Local (private, offline, free) | Cloud (faster, needs a key) |
+|---|---|
+| Ollama, LM Studio, Jan | Gemini, Groq, OpenRouter, OpenAI, Together |
 
+A cloud primary with a local fallback keeps UGOS answering when the network
+drops. Failures are reported with their reason rather than silently degrading to
+a placeholder.
 
-Run the default demo DAG workflow:
+### Persistent memory
 
-Enable Docker Sandbox Mode:
+SQLite-backed (`ugos_memory.db`), in two tiers: **episodic** (what happened,
+per session) and **semantic** (tagged facts that survive restarts). Only genuine
+model answers are stored — placeholder replies are labelled and discarded.
 
+### Orchestration and execution
 
+DAG task orchestrator resolving dependencies topologically, and a sandboxed
+execution engine that runs code in a Docker container (`python:3.12-slim`, no
+network, memory-capped) with automatic process-level fallback when Docker is
+absent.
 
-powershell
+---
 
-python src/ugos/main.py --use-docker --workflow prod\_workflow\_01
+## Layout
 
+```
+UGOS_v1.0_SPECIFICATION/
+├── ugos_config.py           # choose your brain — the only file most people edit
+├── ugos_providers.py        # Ollama, Gemini, OpenAI-compatible providers + router
+├── ugos_agent.py            # the agent loop and read-only toolbox
+├── ugos_web.py              # local web interface (standard library only)
+├── run_my_task.py           # single-request CLI
+├── .env                     # your API keys — gitignored, never committed
+├── src/ugos/
+│   ├── main.py              # CLI entry point
+│   ├── agents/              # BaseAgent + specialised agents
+│   ├── core/                # memory (SQLite), tools (read/write/eval)
+│   ├── engines/             # DAG orchestrator, sandboxed execution
+│   ├── llm/                 # router with fallback chain
+│   └── security/            # zero-trust policy engine
+├── tests/test_core.py       # 11 integration tests
+└── 00_Master/ … 11_Testing/ # 53 specification documents
+```
 
+---
 
+## Testing
 
+```bash
+python -m pytest tests/test_core.py -v
+```
 
-\### 2. Run Integration Test Suite
+11 tests covering the execution engine, DAG orchestration, permission
+enforcement, agent security integration, the tool engine, both memory tiers,
+diff generation, and router failover.
 
+---
 
+## Status
 
-Execute the full 11-part PyTest suite:
+**Working:** security policy with sandbox enforcement, SQLite memory, tool
+engine, DAG orchestration, provider routing across eight backends, the read-only
+agent loop, web and CLI interfaces. 11/11 tests passing.
 
+**Specified but not built:** the specification describes eight specialised
+agents (research, software engineering, cybersecurity, data analysis, project
+management, business analysis, QA, documentation) and nine workflows. The
+implementation currently has two agents — `SoftwareEngineerAgent` and
+`SecurityAuditAgent` — and no workflow implementations. Those documents are
+design, not code.
 
+**Known gaps:**
 
-powershell
+- The code uses four permission levels; `UGOS_400`/`UGOS_402` specify six (L0–L5).
+  Not yet reconciled.
+- `04_Agents/UGOS_201_Base_Agent_Specification.md` currently duplicates
+  `UGOS_210_Research_Agent.md` and needs rewriting as the real base agent contract.
+- `07_Tools_Plugins`, `09_Evaluation`, `11_Testing` and `schemas/v1` are reserved
+  placeholders with no content.
+- Agent tools are read-only. Write access needs the sandbox roots tightened and a
+  confirmation step first.
 
-python -m pytest tests/test\_core.py -v
+---
 
+## Notes
 
+Local models are slow at driving the agent loop — phi3 on CPU can take minutes
+per request and often mangles the tool-call format. `LOCAL_TIMEOUT_SECONDS` and
+`LOCAL_MAX_TOKENS` in `ugos_config.py` tune the wait. For agent work, a cloud
+brain is strongly recommended; keep a local one as the fallback.
 
+## License
 
-
-\---
-
-
-
-\## 🧪 Test Suite Coverage
-
-
-
-| Test Name | Verified Subsystem | Result |
-
-| :--- | :--- | :---: |
-
-| `test\_execution\_engine\_single\_task` | Execution Engine Task Resolution | \*\*PASSED\*\* |
-
-| `test\_orchestrator\_dag\_pipeline` | Topological DAG Dependency Graph | \*\*PASSED\*\* |
-
-| `test\_security\_policy\_enforcement` | Zero-Trust Permission Matrices | \*\*PASSED\*\* |
-
-| `test\_base\_agent\_security\_integration` | Agent Security Context Checks | \*\*PASSED\*\* |
-
-| `test\_tool\_engine\_execution` | Command Execution Sandbox | \*\*PASSED\*\* |
-
-| `test\_memory\_engine\_episodic\_and\_semantic` | In-Memory Facts \& History | \*\*PASSED\*\* |
-
-| `test\_specialized\_agents\_permissions` | `SoftwareEngineerAgent` Role Permissions | \*\*PASSED\*\* |
-
-| `test\_tool\_engine\_file\_writer\_diff` | Patch Generation \& Unified Diffing | \*\*PASSED\*\* |
-
-| `test\_sqlite\_memory\_engine\_persistence` | SQLite Database Schema \& Queries | \*\*PASSED\*\* |
-
-| `test\_llm\_router\_primary\_and\_fallback` | Provider Failover \& Fallback Logic | \*\*PASSED\*\* |
-
-| `test\_execution\_engine\_sandbox\_fallback` | Docker \& Local Fallback Execution | \*\*PASSED\*\* |
-
-
-
-\---
-
-
-
-\## 📄 License
-
-
-
-This specification and reference implementation are released under the \[MIT License](LICENSE).
-
-
-
+MIT.
