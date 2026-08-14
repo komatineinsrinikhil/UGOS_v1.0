@@ -2,6 +2,8 @@
 
 **Unified Agent Operating System** — a zero-trust runtime for AI agents.
 
+Created and maintained by **Komatineni Sri Nikhil**.
+
 Most AI tools are one assistant you have to watch. UGOS is the layer that makes
 watching unnecessary: it decides which agent handles a task, checks every action
 against a permission policy *before* it runs, remembers what happened across
@@ -221,6 +223,11 @@ per request and often mangles the tool-call format. `LOCAL_TIMEOUT_SECONDS` and
 `LOCAL_MAX_TOKENS` in `ugos_config.py` tune the wait. For agent work, a cloud
 brain is strongly recommended; keep a local one as the fallback.
 
+## Author
+
+**Komatineni Sri Nikhil**
+[github.com/komatineinsrinikhil](https://github.com/komatineinsrinikhil)
+
 ## License
 
-MIT.
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Komatineni Sri Nikhil.
