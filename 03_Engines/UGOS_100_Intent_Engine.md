@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_100\_Intent\_Engine
+Document ID: UGOS_100_Intent_Engine
 
 Version: 1.0.0-DRAFT
 
@@ -14,81 +14,75 @@ Target Audience: Core Engineers, API Developers, NLP/LLM Engineers
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_100: Intent Engine Specification
 
-\---
-
-
-
-\# UGOS\_100: Intent Engine Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Intent Engine is the entry-point analysis engine of UGOS v1.0. It parses raw user payloads, validates structure, extracts primary goals and constraints, and assigns a deterministic complexity score to drive workflow routing.
 
+---
 
+## 2. INPUT & OUTPUT SCHEMAS
 
-\---
-
-
-
-\## 2. INPUT \& OUTPUT SCHEMAS
-
-
-
-\### 2.1 Input Payload Schema (JSON)
+### 2.1 Input Payload Schema (JSON)
 
 ```json
 
 {
 
-&#x20; "request\_id": "REQ-100293",
+  "request_id": "REQ-100293",
 
-&#x20; "user\_id": "USR-8821",
+  "user_id": "USR-8821",
 
-&#x20; "raw\_prompt": "Analyze the log files in /var/log/nginx/ and find top 5 HTTP 500 error causes.",
+  "raw_prompt": "Analyze the log files in /var/log/nginx/ and find top 5 HTTP 500 error causes.",
 
-&#x20; "session\_id": "SES-9012",
+  "session_id": "SES-9012",
 
-&#x20; "metadata": {
+  "metadata": {
 
-&#x20;   "channel": "CLI",
+    "channel": "CLI",
 
-&#x20;   "timestamp": "2026-08-09T21:15:00Z"
+    "timestamp": "2026-08-09T21:15:00Z"
 
-&#x20; }
+  }
 
 }
+```
 
 2.2 Output Payload Schema (JSON)JSON{
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "intent\_category": "Log Analysis",
+  "intent_category": "Log Analysis",
 
-&#x20; "primary\_goal": "Identify top 5 causes of HTTP 500 errors in Nginx logs",
+  "primary_goal": "Identify top 5 causes of HTTP 500 errors in Nginx logs",
 
-&#x20; "extracted\_parameters": {
+  "extracted_parameters": {
 
-&#x20;   "log\_path": "/var/log/nginx/",
+    "log_path": "/var/log/nginx/",
 
-&#x20;   "limit": 5,
+    "limit": 5,
 
-&#x20;   "target\_status\_code": 500
+    "target_status_code": 500
 
-&#x20; },
+  },
 
-&#x20; "complexity\_score": 0.65,
+  "complexity_score": 0.65,
 
-&#x20; "requires\_planning": true,
+  "requires_planning": true,
 
-&#x20; "required\_capabilities": \["file\_read", "pattern\_matching", "log\_analysis"],
+  "required_capabilities": ["file_read", "pattern_matching", "log_analysis"],
 
-&#x20; "estimated\_security\_level": "L1"
+  "estimated_security_level": "L1"
 
 }
 
-3\. COMPLEXITY SCORING ALGORITHMThe complexity score ($C$) is calculated using weighted parameters:$$C = (W\_t \\times N\_{tools}) + (W\_d \\times N\_{deps}) + (W\_r \\times Risk\_{level})$$If $C \\ge 0.50$, requires\_planning is set to true (Routes to Planning Engine UGOS\_102).If $C < 0.50$, the task bypasses planning and routes directly to execution.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Intent Engine Specification
+## 3. COMPLEXITY SCORING ALGORITHM
 
+The complexity score ($C$) is calculated using weighted parameters:$$C = (W_t \times N_{tools}) + (W_d \times N_{deps}) + (W_r \times Risk_{level})$$If $C \ge 0.50$, requires_planning is set to true (Routes to Planning Engine UGOS_102).If $C < 0.50$, the task bypasses planning and routes directly to execution.
+
+## 4. REVISION HISTORY
+
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Intent Engine Specification

@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_107\_Tool\_Engine
+Document ID: UGOS_107_Tool_Engine
 
 Version: 1.0.0-DRAFT
 
@@ -14,55 +14,47 @@ Target Audience: Tool Developers, Security Engineers, Core Developers
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_107: Tool Engine Specification
 
-\---
-
-
-
-\# UGOS\_107: Tool Engine Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Tool Engine discovers, validates, permissions, and safely executes external tool functions within isolated Docker/WebAssembly sandboxes.
 
+---
 
-
-\---
-
-
-
-\## 2. TOOL EXECUTION PAYLOAD (JSON)
-
-
+## 2. TOOL EXECUTION PAYLOAD (JSON)
 
 ```json
 
 {
 
-&#x20; "execution\_id": "EXEC-9012",
+  "execution_id": "EXEC-9012",
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "tool\_id": "file\_reader\_v1",
+  "tool_id": "file_reader_v1",
 
-&#x20; "requested\_by\_agent": "Research\_Agent",
+  "requested_by_agent": "Research_Agent",
 
-&#x20; "parameters": {
+  "parameters": {
 
-&#x20;   "file\_path": "/var/log/nginx/access.log",
+    "file_path": "/var/log/nginx/access.log",
 
-&#x20;   "max\_lines": 500
+    "max_lines": 500
 
-&#x20; },
+  },
 
-&#x20; "evaluated\_permission": "L1",
+  "evaluated_permission": "L1",
 
-&#x20; "approval\_token": null
+  "approval_token": null
 
 }
+```
 
-3\. SANDBOX ISOLATION RULESCPU / Memory Limits: Max 1 CPU core, 512 MB RAM per tool execution.Network Policy: Block all outbound traffic by default unless explicitly granted by tool manifest.Timeout: Hard execution limit of 30 seconds per single tool invocation.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Tool Engine Specification
+3. SANDBOX ISOLATION RULESCPU / Memory Limits: Max 1 CPU core, 512 MB RAM per tool execution.Network Policy: Block all outbound traffic by default unless explicitly granted by tool manifest.Timeout: Hard execution limit of 30 seconds per single tool invocation.
 
+## 4. REVISION HISTORY
+
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Tool Engine Specification

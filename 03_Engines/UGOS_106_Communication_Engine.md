@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_106\_Communication\_Engine
+Document ID: UGOS_106_Communication_Engine
 
 Version: 1.0.0-DRAFT
 
@@ -14,69 +14,57 @@ Target Audience: Frontend Integrators, API Engineers, UX Designers
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_106: Communication Engine Specification
 
-\---
-
-
-
-\# UGOS\_106: Communication Engine Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Communication Engine formats, structures, and streams agent reasoning outputs, code artifacts, and final responses to external clients via REST, WebSocket, or CLI interfaces.
 
+---
 
-
-\---
-
-
-
-\## 2. RESPONSE PAYLOAD SCHEMA (JSON)
-
-
+## 2. RESPONSE PAYLOAD SCHEMA (JSON)
 
 ```json
 
 {
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "status": "COMPLETED",
+  "status": "COMPLETED",
 
-&#x20; "output\_type": "MARKDOWN\_WITH\_ARTIFACTS",
+  "output_type": "MARKDOWN_WITH_ARTIFACTS",
 
-&#x20; "content": "### Analysis Summary\\nTop 5 HTTP 500 errors identified...",
+  "content": "### Analysis Summary\nTop 5 HTTP 500 errors identified...",
 
-&#x20; "artifacts": \[
+  "artifacts": [
 
-&#x20;   {
+    {
 
-&#x20;     "artifact\_id": "ART-01",
+      "artifact_id": "ART-01",
 
-&#x20;     "type": "JSON",
+      "type": "JSON",
 
-&#x20;     "filename": "error\_metrics.json",
+      "filename": "error_metrics.json",
 
-&#x20;     "payload": "{\\"status\_500\_count\\": 421}"
+      "payload": "{\"status_500_count\": 421}"
 
-&#x20;   }
+    }
 
-&#x20; ],
+  ],
 
-&#x20; "confidence\_score": 0.92,
+  "confidence_score": 0.92,
 
-&#x20; "execution\_metrics": {
+  "execution_metrics": {
 
-&#x20;   "total\_duration\_ms": 1420,
+    "total_duration_ms": 1420,
 
-&#x20;   "total\_tokens\_used": 1850
+    "total_tokens_used": 1850
 
-&#x20; }
+  }
 
 }
+```
 
-3\. STREAMING PROTOCOLFor WebSocket connections, outputs must stream using Server-Sent Events (SSE) / JSON frames with chunk types THINKING, CONTENT\_DELTA, ARTIFACT\_DELTA, and FINAL\_PAYLOAD.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Communication Engine Specification
-
+3. STREAMING PROTOCOLFor WebSocket connections, outputs must stream using Server-Sent Events (SSE) / JSON frames with chunk types THINKING, CONTENT_DELTA, ARTIFACT_DELTA, and FINAL_PAYLOAD.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Communication Engine Specification

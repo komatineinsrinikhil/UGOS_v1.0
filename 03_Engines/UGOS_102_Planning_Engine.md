@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_102\_Planning\_Engine
+Document ID: UGOS_102_Planning_Engine
 
 Version: 1.0.0-DRAFT
 
@@ -14,77 +14,71 @@ Target Audience: Core Engineers, Multi-Agent Developers, Systems Architects
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_102: Planning Engine Specification
 
-\---
-
-
-
-\# UGOS\_102: Planning Engine Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Planning Engine converts multi-step objectives into executable Directed Acyclic Graphs (DAGs), specifying task dependencies, assigned capabilities, tool requirements, and safety gates.
 
+---
 
-
-\---
-
-
-
-\## 2. EXECUTION DAG SCHEMA (JSON)
-
-
+## 2. EXECUTION DAG SCHEMA (JSON)
 
 ```json
 
 {
 
-&#x20; "plan\_id": "PLAN-9012",
+  "plan_id": "PLAN-9012",
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "nodes": \[
+  "nodes": [
 
-&#x20;   {
+    {
 
-&#x20;     "node\_id": "STEP-01",
+      "node_id": "STEP-01",
 
-&#x20;     "action": "Read log directory",
+      "action": "Read log directory",
 
-&#x20;     "required\_capability": "file\_read",
+      "required_capability": "file_read",
 
-&#x20;     "target\_agent": "Research\_Agent",
+      "target_agent": "Research_Agent",
 
-&#x20;     "required\_permission": "L1",
+      "required_permission": "L1",
 
-&#x20;     "dependencies": \[]
+      "dependencies": []
 
-&#x20;   },
+    },
 
-&#x20;   {
+    {
 
-&#x20;     "node\_id": "STEP-02",
+      "node_id": "STEP-02",
 
-&#x20;     "action": "Parse HTTP 500 occurrences",
+      "action": "Parse HTTP 500 occurrences",
 
-&#x20;     "required\_capability": "pattern\_matching",
+      "required_capability": "pattern_matching",
 
-&#x20;     "target\_agent": "Data\_Analyst\_Agent",
+      "target_agent": "Data_Analyst_Agent",
 
-&#x20;     "required\_permission": "L0",
+      "required_permission": "L0",
 
-&#x20;     "dependencies": \["STEP-01"]
+      "dependencies": ["STEP-01"]
 
-&#x20;   }
+    }
 
-&#x20; ],
+  ],
 
-&#x20; "contains\_high\_risk\_actions": false
+  "contains_high_risk_actions": false
 
 }
+```
 
-3\. PLAN VALIDATION RULESCycle Detection: The Planning Engine must validate that node dependencies contain zero circular references.Permission Escalation Flag: If any node requires Level 4 ($L\_4$) or Level 5 ($L\_5$) permissions, contains\_high\_risk\_actions must be set to true.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Planning Engine Specification
+## 3. PLAN VALIDATION RULES
 
+Cycle Detection: The Planning Engine must validate that node dependencies contain zero circular references.Permission Escalation Flag: If any node requires Level 4 ($L_4$) or Level 5 ($L_5$) permissions, contains_high_risk_actions must be set to true.
+
+## 4. REVISION HISTORY
+
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Planning Engine Specification

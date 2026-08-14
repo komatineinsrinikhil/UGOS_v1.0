@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_104\_Task\_Router
+Document ID: UGOS_104_Task_Router
 
 Version: 1.0.0-DRAFT
 
@@ -14,75 +14,69 @@ Target Audience: Core Engineers, Systems Architects, Multi-Agent Developers
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_104: Task Router Specification
 
-\---
-
-
-
-\# UGOS\_104: Task Router Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Task Router dynamically matches task requirements and DAG steps to appropriate specialist agents based on capability parameters, operational availability, and performance history.
 
+---
 
-
-\---
-
-
-
-\## 2. ROUTING SCHEMA \& AGENT MATCHING (JSON)
-
-
+## 2. ROUTING SCHEMA & AGENT MATCHING (JSON)
 
 ```json
 
 {
 
-&#x20; "routing\_id": "ROUTE-8012",
+  "routing_id": "ROUTE-8012",
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "subtask\_id": "STEP-01",
+  "subtask_id": "STEP-01",
 
-&#x20; "required\_capabilities": \["file\_read", "pattern\_matching"],
+  "required_capabilities": ["file_read", "pattern_matching"],
 
-&#x20; "required\_security\_level": "L1",
+  "required_security_level": "L1",
 
-&#x20; "candidate\_agents": \[
+  "candidate_agents": [
 
-&#x20;   {
+    {
 
-&#x20;     "agent\_id": "Research\_Agent",
+      "agent_id": "Research_Agent",
 
-&#x20;     "capability\_match\_score": 0.95,
+      "capability_match_score": 0.95,
 
-&#x20;     "health\_status": "ONLINE",
+      "health_status": "ONLINE",
 
-&#x20;     "current\_load": 2
+      "current_load": 2
 
-&#x20;   },
+    },
 
-&#x20;   {
+    {
 
-&#x20;     "agent\_id": "Software\_Engineer\_Agent",
+      "agent_id": "Software_Engineer_Agent",
 
-&#x20;     "capability\_match\_score": 0.70,
+      "capability_match_score": 0.70,
 
-&#x20;     "health\_status": "ONLINE",
+      "health_status": "ONLINE",
 
-&#x20;     "current\_load": 0
+      "current_load": 0
 
-&#x20;   }
+    }
 
-&#x20; ],
+  ],
 
-&#x20; "assigned\_agent": "Research\_Agent"
+  "assigned_agent": "Research_Agent"
 
 }
+```
 
-3\. SELECTION ALGORITHMCapability Filter: Filter agent registry for agents possessing 100% of required\_capabilities.Security Gate Filter: Eliminate agents lacking authorization for required\_security\_level.Load Balancing Score ($S\_r$):$$S\_r = (MatchScore \\times 0.7) + ((1 - CurrentLoad/MaxLoad) \\times 0.3)$$Select agent with highest $S\_r$.4. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Task Router Specification
+## 3. SELECTION ALGORITHM
 
+Capability Filter: Filter agent registry for agents possessing 100% of required_capabilities.Security Gate Filter: Eliminate agents lacking authorization for required_security_level.Load Balancing Score ($S_r$):$$S_r = (MatchScore \times 0.7) + ((1 - CurrentLoad/MaxLoad) \times 0.3)$$Select agent with highest $S_r$.
+
+## 4. REVISION HISTORY
+
+VersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Task Router Specification

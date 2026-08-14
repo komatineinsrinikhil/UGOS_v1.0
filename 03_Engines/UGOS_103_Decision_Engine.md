@@ -1,6 +1,6 @@
-\# UGOS DOCUMENT METADATA
+# UGOS DOCUMENT METADATA
 
-Document ID: UGOS\_103\_Decision\_Engine
+Document ID: UGOS_103_Decision_Engine
 
 Version: 1.0.0-DRAFT
 
@@ -14,79 +14,67 @@ Target Audience: Core Engineers, Governance Engineers, Systems Architects
 
 Last Updated: 2026-08-09
 
+---
 
+# UGOS_103: Decision Engine Specification
 
-\---
-
-
-
-\# UGOS\_103: Decision Engine Specification
-
-
-
-\## 1. PURPOSE
+## 1. PURPOSE
 
 The Decision Engine evaluates competing action paths, performs cost-benefit and risk analysis, and selects optimal execution paths under uncertainty.
 
+---
 
-
-\---
-
-
-
-\## 2. DECISION MATRIX SCHEMA (JSON)
-
-
+## 2. DECISION MATRIX SCHEMA (JSON)
 
 ```json
 
 {
 
-&#x20; "decision\_id": "DEC-4012",
+  "decision_id": "DEC-4012",
 
-&#x20; "task\_id": "TASK-5012",
+  "task_id": "TASK-5012",
 
-&#x20; "options": \[
+  "options": [
 
-&#x20;   {
+    {
 
-&#x20;     "option\_id": "OPT-A",
+      "option_id": "OPT-A",
 
-&#x20;     "description": "Isolate system and inspect logs in-place",
+      "description": "Isolate system and inspect logs in-place",
 
-&#x20;     "risk\_level": "LOW",
+      "risk_level": "LOW",
 
-&#x20;     "estimated\_cost": "0.10 USD",
+      "estimated_cost": "0.10 USD",
 
-&#x20;     "reversibility": "HIGH",
+      "reversibility": "HIGH",
 
-&#x20;     "score": 0.85
+      "score": 0.85
 
-&#x20;   },
+    },
 
-&#x20;   {
+    {
 
-&#x20;     "option\_id": "OPT-B",
+      "option_id": "OPT-B",
 
-&#x20;     "description": "Restart web server immediately",
+      "description": "Restart web server immediately",
 
-&#x20;     "risk\_level": "MEDIUM",
+      "risk_level": "MEDIUM",
 
-&#x20;     "estimated\_cost": "0.01 USD",
+      "estimated_cost": "0.01 USD",
 
-&#x20;     "reversibility": "LOW",
+      "reversibility": "LOW",
 
-&#x20;     "score": 0.40
+      "score": 0.40
 
-&#x20;   }
+    }
 
-&#x20; ],
+  ],
 
-&#x20; "selected\_option": "OPT-A",
+  "selected_option": "OPT-A",
 
-&#x20; "justification": "Option A minimizes downtime risk and preserves forensic log evidence."
+  "justification": "Option A minimizes downtime risk and preserves forensic log evidence."
 
 }
+```
 
-3\. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Decision Engine Specification
-
+3. REVISION HISTORYVersionDateAuthorSummary of Changes1.0.0-DRAFT2026-08-09Core Engineering Architecture GroupInitial Release of Decision Engine Specification
