@@ -88,7 +88,7 @@ Six privilege levels, per `UGOS_400`:
 | **L0** | Untrusted / Public | read only |
 | **L1** | Standard Agent | + write, network |
 | **L2** | Sandboxed Dev | + shell execution |
-| **L3** | System Integrator | delegation, API routing, DB queries |
+| **L3** | System Integrator | + delegation, API routing, DB queries |
 | **L4** | Guarded Admin | + system modification — needs approval |
 | **L5** | Root Kernel | everything — needs approval |
 
@@ -188,10 +188,10 @@ design, not code.
 
 **Known gaps:**
 
-- `L3` grants no capability beyond `L2` under the current five actions.
-  Delegation, API routing and database access are not yet distinct actions.
-- `07_Tools_Plugins`, `09_Evaluation`, `11_Testing` and `schemas/v1` are reserved
-  placeholders with no content.
+- The L3 actions (`DELEGATE_TASK`, `ROUTE_API`, `QUERY_DATABASE`) are defined and
+  gated, but no tool implements them yet.
+- `UGOS_800` (evaluation) specifies a probe harness that is not yet built.
+- `schemas/v1` is still an empty placeholder.
 - Agent tools are read-only. Write access needs the sandbox roots tightened and a
   confirmation step first.
 

@@ -12,6 +12,7 @@ Six levels, L0 through L5, as specified:
     L1  Standard Agent       Read-write working memory; basic tool execution.
     L2  Sandboxed Dev        Code compilation, unit tests, static analysis.
     L3  System Integrator    Multi-agent delegation, API routing, DB queries.
+                             Gated by DELEGATE_TASK, ROUTE_API, QUERY_DATABASE.
     L4  Guarded Admin        Security patching, temporary policy overrides.
     L5  Root Kernel          Kernel manipulation, key rotation, spec updates.
 
@@ -19,11 +20,6 @@ The implementation previously had four ad-hoc levels. The old names are kept
 as aliases so existing code and tests continue to work:
 
     READ_ONLY -> L0    STANDARD_EXEC -> L1    ELEVATED -> L2    SYSTEM_ADMIN -> L5
-
-Honest note on L3: with the current five SecurityAction values, L3 grants the
-same actions as L2. Delegation, API routing and database access are not yet
-distinct actions, so L3 exists to keep the ladder aligned with the spec rather
-than to gate anything new today. That will change when those actions exist.
 
 ENFORCEMENT
 -----------
@@ -89,6 +85,12 @@ class SecurityAction(Enum):
     EXECUTE_SHELL = "execute_shell"
     NETWORK_CALL = "network_call"
     MODIFY_SYSTEM = "modify_system"
+    # L3 capabilities (UGOS_400 s.2: "multi-agent delegation, internal API
+    # routing, database queries"). Until these existed, L3 granted nothing
+    # beyond L2 and the level was decorative.
+    DELEGATE_TASK = "delegate_task"
+    ROUTE_API = "route_api"
+    QUERY_DATABASE = "query_database"
 
 
 FILE_ACTIONS = (SecurityAction.READ_FILE, SecurityAction.WRITE_FILE)
@@ -143,12 +145,18 @@ class PolicyEngine:
                 SecurityAction.WRITE_FILE,
                 SecurityAction.NETWORK_CALL,
                 SecurityAction.EXECUTE_SHELL,
+                SecurityAction.DELEGATE_TASK,
+                SecurityAction.ROUTE_API,
+                SecurityAction.QUERY_DATABASE,
             ],
             PermissionLevel.L4_GUARDED: [
                 SecurityAction.READ_FILE,
                 SecurityAction.WRITE_FILE,
                 SecurityAction.NETWORK_CALL,
                 SecurityAction.EXECUTE_SHELL,
+                SecurityAction.DELEGATE_TASK,
+                SecurityAction.ROUTE_API,
+                SecurityAction.QUERY_DATABASE,
                 SecurityAction.MODIFY_SYSTEM,
             ],
             PermissionLevel.L5_ROOT: list(SecurityAction),

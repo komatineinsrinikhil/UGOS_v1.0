@@ -2,7 +2,7 @@
 
 Last Updated: 2026-08-14
 
-Specification: 53 / 53 planned spec files drafted (100% of active modules).
+Specification: 56 spec files (53 original + UGOS_600, UGOS_800, UGOS_900).
 Reference implementation: working, 11/11 tests passing.
 
 This file is the single source of truth for project state. Both the human and
@@ -22,13 +22,13 @@ codebase quietly breaks.
 - [x] 08_Governance_Security: UGOS_400 through UGOS_403 (4 files)
 - [x] 10_SDK: UGOS_700, UGOS_701 (2 files)
 
-## RESERVED / NOT YET DRAFTED
+## RESERVED MODULES
 
-Folders exist on disk but are intentionally empty:
+Drafted 2026-08-14; only schemas/v1 remains empty:
 
-- [ ] 07_Tools_Plugins
-- [ ] 09_Evaluation
-- [ ] 11_Testing
+- [x] 07_Tools_Plugins — UGOS_600 (tool architecture)
+- [x] 09_Evaluation — UGOS_800 (evaluation framework)
+- [x] 11_Testing — UGOS_900 (testing standard)
 - [ ] schemas/v1 — intended for JSON schemas from `extract_schemas.py`, which has
       not been run against the current doc set
 
@@ -72,6 +72,12 @@ Working and tested:
   fail-closed default on evaluation error.
 - **`UGOS_201` rewritten** as the real base agent contract; it previously
   duplicated `UGOS_210_Research_Agent.md`.
+- **L3 now gates real capability.** Added `DELEGATE_TASK`, `ROUTE_API` and
+  `QUERY_DATABASE` to `SecurityAction`, granted at L3 and above. L2 is refused
+  all three. The level was previously decorative.
+- **Three reserved modules drafted**: `UGOS_600` tool architecture (from the
+  v0.1 Tool Integration Framework), `UGOS_800` evaluation framework (new), and
+  `UGOS_900` testing standard.
 - **Spec markdown repaired across all 52 files.** 7,466 backslash escapes and
   1,105 `&#x20;` entities removed, 39 unterminated code fences closed. Verified
   by word-level diff: content identical, formatting only.
@@ -83,9 +89,14 @@ Working and tested:
   The README says so explicitly — keep it that way.
 - **Agent tools are read-only.** Write access needs tightened sandbox roots and a
   confirmation step before it is safe to enable.
-- **L3 grants nothing beyond L2** under the current five `SecurityAction`
-  values. The level exists to match the spec ladder; it gates nothing new until
-  delegation and database actions are defined.
+- **No tool implements the L3 actions yet.** `DELEGATE_TASK`, `ROUTE_API` and
+  `QUERY_DATABASE` are defined and gated, but nothing in the registry requests
+  them, so L3 is enforceable but unexercised.
+- **`UGOS_800` specifies a probe harness that does not exist.** The security
+  probes are verified by hand today. Stated plainly in the document.
+- **Test coverage lags the code.** No committed tests for the L3 actions, the
+  elevation gate, fail-closed behaviour, `ugos_agent.py` or `ugos_providers.py`.
+  Listed as deviations in `UGOS_900`.
 - **Run-together paragraphs remain in 22 spec files.** The escape damage was
   repaired, but the original paste also destroyed newlines inside some
   paragraphs, gluing sentences together. Numbered headings were restored
@@ -98,9 +109,8 @@ Working and tested:
 Pick one; none is in progress:
 
 1. Add write access to the agent: sandbox roots + diff + confirmation
-2. Draft one of the reserved modules (07 / 09 / 11)
+2. Build the UGOS_800 probe harness and add the missing tests from UGOS_900
 3. Host UGOS behind a public URL — needs a server, `HOST = "0.0.0.0"`, and
    authentication. Without a login, anyone with the link can spend the API key
    and read the sandbox.
-4. Define distinct actions for L3 (delegation, API routing, database access) so
-   the level gates something beyond L2
+4. Write tools for the L3 actions so the level is exercised, not just enforced

@@ -91,17 +91,20 @@ product was a GPT someone talks to. It matters less when the product is a
 runtime that executes tasks. But "which agent am I and what am I for" is not
 entirely answered by a permission level.
 
-## What is still unfinished
-
-Two v0.1 documents map onto v1.0 modules that are still empty placeholders:
+## What was reclaimed
 
 - `06_TOOL_EXTENSION` — seven tool categories, an integration framework, and
-  selection logic. v1.0's `07_Tools_Plugins` has no content, and
-  `UGOS_107_Tool_Engine` is the shortest spec in the set.
-- `08_LEARNING_IMPROVEMENT` — a learning lifecycle in seven stages. v1.0's
-  `09_Evaluation` has no content.
+  selection logic. This became `07_Tools_Plugins/UGOS_600`, with each category
+  now carrying the privilege level it implies. The v0.1 version described how a
+  model *should* choose tools; UGOS_600 specifies a registry where a tool
+  declares the security action it needs and cannot execute without a decision.
+- `08_LEARNING_IMPROVEMENT` — a learning lifecycle in seven stages. On a closer
+  read this is about teaching a *human* through competency levels, not about
+  evaluating an agent, so it belongs with `UGOS_109_Learning_Engine` rather than
+  with `09_Evaluation`. `UGOS_800` was written from scratch instead.
 
-The thinking exists. It was simply left behind in the rewrite.
+The tool thinking existed and was reused. The learning material is still
+unclaimed.
 
 ---
 
