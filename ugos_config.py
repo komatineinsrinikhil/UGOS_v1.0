@@ -7,7 +7,7 @@ No API keys live in this file -- see "WHERE KEYS GO" at the bottom.
 
 QUICK START
 -----------
-Offline, private, free  ->  PRIMARY = "ollama"      (needs Ollama running)
+Offline, private, free  ->  PRIMARY = "gemini"      (needs Ollama running)
 Best answers, no download ->  PRIMARY = "gemini"    (needs a free Google key)
 Fastest answers          ->  PRIMARY = "groq"       (needs a free Groq key)
 Many models, one key     ->  PRIMARY = "openrouter" (needs an OpenRouter key)
@@ -23,10 +23,10 @@ Internet up, you get the good answers. Internet down, UGOS keeps working.
 # 1. WHICH BRAIN
 # ---------------------------------------------------------------------------
 
-PRIMARY = "ollama"
+PRIMARY = "gemini"
 
 # Tried only if PRIMARY fails. Set to None for no fallback.
-FALLBACK = None
+FALLBACK = "ollama"
 
 # If every real provider fails, answer with the built-in fake provider?
 # Replies are clearly labelled as placeholders and are never saved to memory.
