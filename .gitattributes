@@ -16,3 +16,7 @@
 *.pyc binary
 *.png binary
 *.jpg binary
+
+# Windows batch files MUST keep CRLF or they can fail on cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf

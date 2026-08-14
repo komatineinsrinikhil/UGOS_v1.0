@@ -19,3 +19,6 @@ __pycache__/
 # System / IDE Files
 .vscode/
 .idea/
+# Local backup of the pre-fix script (git history already has it)
+run_my_task_ORIGINAL.py
+_to_delete/
