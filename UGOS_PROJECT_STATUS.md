@@ -36,8 +36,8 @@ Folders exist on disk but are intentionally empty:
 
 Working and tested:
 
-- Zero-trust policy engine with three checks: permission level, forbidden
-  pattern, and sandbox boundary
+- Zero-trust policy engine, L0-L5, with four checks: elevation gate, permission
+  level, forbidden pattern, and sandbox boundary; fail-closed on error
 - SQLite memory (episodic + semantic), surviving restarts
 - Tool engine: file read, file write with unified diff, expression evaluation
 - DAG orchestrator with topological dependency resolution
@@ -65,19 +65,24 @@ Working and tested:
 - **`.gitattributes` forced LF on `.bat` files**, which can break `cmd.exe`
   parsing of parenthesised blocks. `.bat`/`.cmd` pinned to CRLF.
 - Twelve stale git lock files in `.git/` were blocking commits.
+- **Permission levels now match the spec.** Six levels (L0_UNTRUSTED through
+  L5_ROOT) per `UGOS_400` s.2, replacing the four ad-hoc ones. Old names are
+  kept as enum aliases so existing code and tests are unaffected. Adds the
+  `UGOS_402` elevation gate (L4/L5 denied without explicit approval) and a
+  fail-closed default on evaluation error.
+- **`UGOS_201` rewritten** as the real base agent contract; it previously
+  duplicated `UGOS_210_Research_Agent.md`.
 
 ## OPEN GAPS
 
-- **Permission levels do not match the spec.** Code has four
-  (`READ_ONLY`, `STANDARD_EXEC`, `ELEVATED`, `SYSTEM_ADMIN`); `UGOS_400`/
-  `UGOS_402` define six (L0–L5).
-- **`UGOS_201_Base_Agent_Specification.md` duplicates `UGOS_210_Research_Agent.md`**
-  and needs rewriting as the real base agent contract.
 - **Spec describes eight specialised agents and nine workflows; the code has two
   agents and no workflow implementations.** Those documents are design, not code.
   The README says so explicitly — keep it that way.
 - **Agent tools are read-only.** Write access needs tightened sandbox roots and a
   confirmation step before it is safe to enable.
+- **L3 grants nothing beyond L2** under the current five `SecurityAction`
+  values. The level exists to match the spec ladder; it gates nothing new until
+  delegation and database actions are defined.
 - **Spec markdown is damaged.** Every file under `00_Master` through `10_SDK`
   contains backslash-escaped markdown (`\#`, `\*\*`, `\_`) and `&#x20;` entities
   from a bad paste; several have unterminated code fences that swallow later
@@ -88,7 +93,10 @@ Working and tested:
 Pick one; none is in progress:
 
 1. Clean the spec markdown (56 files) — mechanical, unblocks reading them at all
-2. Reconcile the permission-level mismatch between code and `UGOS_400`/`UGOS_402`
-3. Rewrite `UGOS_201` as the real base agent spec
-4. Add write access to the agent: sandbox roots + diff + confirmation
-5. Draft one of the reserved modules (07 / 09 / 11)
+2. Add write access to the agent: sandbox roots + diff + confirmation
+3. Draft one of the reserved modules (07 / 09 / 11)
+4. Host UGOS behind a public URL — needs a server, `HOST = "0.0.0.0"`, and
+   authentication. Without a login, anyone with the link can spend the API key
+   and read the sandbox.
+5. Define distinct actions for L3 (delegation, API routing, database access) so
+   the level gates something beyond L2

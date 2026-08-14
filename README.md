@@ -65,19 +65,30 @@ No dependencies beyond the standard library.
 
 ### Zero-trust security
 
-Every file action passes three checks, in order:
+Every action passes four checks, in order:
 
-1. **Permission level** — may this role perform this kind of action at all?
-2. **Forbidden pattern** — is the target a secret or system file? (`.env`,
+1. **Elevation gate** — L4 and L5 require explicit approval; denied by default.
+2. **Permission level** — may this level perform this kind of action at all?
+3. **Forbidden pattern** — is the target a secret or system file? (`.env`,
    `*.key`, `*.pem`, `id_rsa`, `.git/config`, `*credentials*`, `/etc/*`,
    `C:\Windows\*`)
-3. **Sandbox boundary** — the target is fully resolved and must sit inside an
+4. **Sandbox boundary** — the target is fully resolved and must sit inside an
    allowed root, so `../..` traversal cannot escape the project folder.
 
-Check 3 is what stops an agent rewriting `src/ugos/security/policy.py` — its own
-rules. Every decision, allowed or denied, lands in an audit log.
+Check 4 is what stops an agent rewriting `src/ugos/security/policy.py` — its own
+rules. Evaluation is fail-closed: an error during evaluation denies. Every
+decision, allowed or denied, lands in an audit log.
 
-Four permission levels: `READ_ONLY`, `STANDARD_EXEC`, `ELEVATED`, `SYSTEM_ADMIN`.
+Six privilege levels, per `UGOS_400`:
+
+| | | |
+|---|---|---|
+| **L0** | Untrusted / Public | read only |
+| **L1** | Standard Agent | + write, network |
+| **L2** | Sandboxed Dev | + shell execution |
+| **L3** | System Integrator | delegation, API routing, DB queries |
+| **L4** | Guarded Admin | + system modification — needs approval |
+| **L5** | Root Kernel | everything — needs approval |
 
 ### The agent loop
 
@@ -175,10 +186,8 @@ design, not code.
 
 **Known gaps:**
 
-- The code uses four permission levels; `UGOS_400`/`UGOS_402` specify six (L0–L5).
-  Not yet reconciled.
-- `04_Agents/UGOS_201_Base_Agent_Specification.md` currently duplicates
-  `UGOS_210_Research_Agent.md` and needs rewriting as the real base agent contract.
+- `L3` grants no capability beyond `L2` under the current five actions.
+  Delegation, API routing and database access are not yet distinct actions.
 - `07_Tools_Plugins`, `09_Evaluation`, `11_Testing` and `schemas/v1` are reserved
   placeholders with no content.
 - Agent tools are read-only. Write access needs the sandbox roots tightened and a
