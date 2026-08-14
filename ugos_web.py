@@ -31,6 +31,7 @@ from ugos.agents.specialized import SoftwareEngineerAgent
 
 import ugos_config as cfg
 from ugos_providers import build_router, describe_setup, is_real_answer
+from ugos_agent import run_agent, ReadOnlyToolbox
 
 HOST = "127.0.0.1"
 PORT = 8000
@@ -82,6 +83,19 @@ PAGE = """<!DOCTYPE html>
   .banner { padding:10px 12px; border-radius:6px; font-size:13px; margin-bottom:14px; }
   .banner.bad { background:rgba(248,81,73,0.12); color:#ff9a94; }
   .banner.warn { background:rgba(210,153,34,0.12); color:#e3b341; }
+  .steps { margin-bottom:16px; border-left:2px solid var(--line); padding-left:14px; }
+  .step { font-size:12.5px; margin-bottom:9px; }
+  .step .head { display:flex; align-items:center; gap:8px; }
+  .badge { font-size:10px; font-weight:700; letter-spacing:0.05em; padding:2px 7px;
+    border-radius:4px; flex:none; }
+  .badge.ok { background:rgba(63,185,80,0.15); color:#56d364; }
+  .badge.no { background:rgba(248,81,73,0.15); color:#ff9a94; }
+  .step .call { color:var(--text); font-family:"Cascadia Mono",Consolas,monospace; }
+  .step .res { color:var(--muted); margin:4px 0 0 0; padding-left:2px;
+    font-family:"Cascadia Mono",Consolas,monospace; font-size:11.5px;
+    white-space:pre-wrap; max-height:64px; overflow:hidden; }
+  .stepsTitle { color:var(--muted); font-size:11px; text-transform:uppercase;
+    letter-spacing:0.07em; margin-bottom:10px; }
 </style>
 </head>
 <body>
@@ -99,6 +113,7 @@ PAGE = """<!DOCTYPE html>
 
   <div class="out" id="out">
     <div id="banner"></div>
+    <div id="steps"></div>
     <pre id="answer"></pre>
     <div class="meta" id="meta"></div>
   </div>
@@ -106,6 +121,7 @@ PAGE = """<!DOCTYPE html>
 
 <script>
 const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 function brainRow(role, b) {
   if (!b) return '';
@@ -138,7 +154,7 @@ async function run() {
 
   $('go').disabled = true; $('go').textContent = 'Working...';
   $('out').className = 'out show';
-  $('banner').innerHTML = ''; $('meta').textContent = '';
+  $('banner').innerHTML = ''; $('meta').textContent = ''; $('steps').innerHTML = '';
   $('answer').textContent = 'Thinking. A local model takes longer on the first request while it loads.';
 
   try {
@@ -148,6 +164,20 @@ async function run() {
     });
     const d = await r.json();
     $('answer').textContent = d.answer || '(no answer)';
+
+    if (d.steps && d.steps.length) {
+      let h = '<div class="stepsTitle">What it did</div><div class="steps">';
+      for (const s of d.steps) {
+        const badge = s.allowed
+          ? '<span class="badge ok">ALLOWED</span>'
+          : '<span class="badge no">BLOCKED</span>';
+        const call = s.tool + '(' + Object.values(s.args || {}).map(v => JSON.stringify(v)).join(', ') + ')';
+        h += '<div class="step"><div class="head">' + badge +
+             '<span class="call">' + esc(call) + '</span></div>' +
+             '<div class="res">' + esc((s.output || '').split('\\n').slice(0,3).join('\\n')) + '</div></div>';
+      }
+      $('steps').innerHTML = h + '</div>';
+    }
 
     if (d.blocked) {
       $('banner').className = 'banner bad';
@@ -192,8 +222,10 @@ class UGOS:
         self.session = self.memory.get_or_create_session(SESSION_ID)
         self.agent = SoftwareEngineerAgent(name="WebBot")
         self.router = build_router()
+        self.toolbox = ReadOnlyToolbox(sandbox_root=BASE_DIR)
 
     def ask(self, prompt: str) -> dict:
+        # Outer gate: may this agent talk to a model at all?
         verdict = self.agent.evaluate_and_act(
             action=SecurityAction.NETWORK_CALL,
             target=f"{cfg.PRIMARY}://{cfg.MODELS.get(cfg.PRIMARY, '')}",
@@ -201,33 +233,31 @@ class UGOS:
         if verdict.get("status") != "SUCCESS":
             self.session.log_event(self.agent.agent_id, "llm_request_blocked", {"prompt": prompt})
             return {
-                "blocked": True, "real": False, "saved": False,
+                "blocked": True, "real": False, "saved": False, "steps": [],
                 "answer": verdict.get("reason", "Denied by security policy."),
                 "provider": None, "model": None, "seconds": 0,
             }
 
-        started = time.time()
-        result = self.router.generate(prompt)
-        elapsed = round(time.time() - started, 1)
-
-        real = is_real_answer(result)
-        answer = result.get("content", "")
+        # Inner gates: every tool the model asks for is checked individually.
+        run = run_agent(self.router, prompt, toolbox=self.toolbox)
+        answer = run["answer"]
+        real = not run["failed"] and "mock" not in (run.get("provider") or "").lower()
 
         if real:
             self.memory.set_global_fact(
                 key=f"answer::{prompt[:60]}",
                 value=answer,
-                tags=[result.get("provider", "unknown"), result.get("model", "")],
+                tags=[run.get("provider", "unknown"), run.get("model", "")],
             )
             self.session.log_event(
                 self.agent.agent_id, "llm_request",
-                {"prompt": prompt, "provider": result.get("provider")},
+                {"prompt": prompt, "provider": run.get("provider"), "tools_used": len(run["steps"])},
             )
 
         return {
             "blocked": False, "real": real, "saved": real, "answer": answer,
-            "provider": result.get("provider"), "model": result.get("model"),
-            "seconds": elapsed,
+            "steps": run["steps"], "provider": run.get("provider"),
+            "model": run.get("model"), "seconds": run.get("seconds", 0),
         }
 
 

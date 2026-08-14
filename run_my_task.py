@@ -29,6 +29,7 @@ from ugos.agents.specialized import SoftwareEngineerAgent
 
 import ugos_config as cfg
 from ugos_providers import build_router, describe_setup, is_real_answer
+from ugos_agent import run_agent, ReadOnlyToolbox
 
 DEFAULT_PROMPT = "Write a 3-line Python function to compute the Fibonacci sequence."
 SESSION_ID = "sess_cli_01"
@@ -99,12 +100,32 @@ def main() -> int:
     print("  [SECURITY] Authorized by PolicyEngine.")
     print("  [ROUTER]   Thinking...")
 
-    result = router.generate(prompt)
-    answer = result.get("content", "")
+    # The agent loop. It answers directly when no tool is needed, so this is
+    # a superset of a plain question -- every tool it asks for is checked
+    # individually by the PolicyEngine before it runs.
+    run = run_agent(router, prompt, toolbox=ReadOnlyToolbox(sandbox_root=BASE_DIR))
+    answer = run["answer"]
+
+    if run["steps"]:
+        print("\n  What it did:")
+        for step in run["steps"]:
+            flag = "ALLOWED" if step["allowed"] else "BLOCKED"
+            args = ", ".join(str(v) for v in step["args"].values())
+            print(f"    [{flag}] {step['tool']}({args})")
+            first_line = (step["output"] or "").strip().splitlines()
+            if first_line:
+                print(f"             {first_line[0][:70]}")
 
     print("\n" + "-" * 64)
     print(answer if answer else "(no content returned)")
     print("-" * 64)
+
+    result = {
+        "status": "ERROR" if run["failed"] else "SUCCESS",
+        "provider": run.get("provider"),
+        "model": run.get("model"),
+        "content": answer,
+    }
 
     # ------------------------------------------------------------------
     # Save ONLY if a real model answered.
