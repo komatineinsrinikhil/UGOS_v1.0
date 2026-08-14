@@ -20,3 +20,6 @@
 # Windows batch files MUST keep CRLF or they can fail on cmd.exe.
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+# Word originals kept in the archive
+*.docx binary

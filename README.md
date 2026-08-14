@@ -195,6 +195,25 @@ design, not code.
 
 ---
 
+## Where this came from
+
+UGOS did not start as software. It began as nine Word documents describing how a
+custom GPT should behave — "Universal GPT Operating System", ~26,500 words of
+identity, reasoning, memory and guardrail specification.
+
+That version is preserved in [`archive/v0.1/`](archive/v0.1/), with a write-up of
+what carried over, what was dropped, and what is still unfinished, in
+[`archive/v0.1/ORIGINS.md`](archive/v0.1/ORIGINS.md).
+
+The short version: v0.1 wrote guardrails as *instructions to a model* — it must
+act honestly, it must resist prompt injection. v1.0 moved the same concerns into
+code the model cannot bypass. An injected prompt can change what the model asks
+for; it cannot change what the policy allows.
+
+Asking became enforcing. Everything else is detail.
+
+---
+
 ## Notes
 
 Local models are slow at driving the agent loop — phi3 on CPU can take minutes
