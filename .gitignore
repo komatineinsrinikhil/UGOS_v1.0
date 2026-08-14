@@ -22,3 +22,6 @@ __pycache__/
 # Local backup of the pre-fix script (git history already has it)
 run_my_task_ORIGINAL.py
 _to_delete/
+
+# API keys -- never commit these
+.env
