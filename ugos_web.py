@@ -184,7 +184,15 @@ async function run() {
       $('banner').textContent = 'Blocked by the security policy before anything ran.';
     } else if (!d.real) {
       $('banner').className = 'banner warn';
-      $('banner').textContent = 'This came from a placeholder, not a real model. Not saved to memory.';
+      let why = 'This came from a placeholder, not a real model. Not saved to memory.';
+      if (d.errors && d.errors.length) {
+        why += '<br><br>Why:';
+        for (const e of d.errors) {
+          if ((e.provider || '').toLowerCase().includes('mock')) continue;
+          why += '<br>\u00b7 <b>' + esc(e.provider) + '</b>: ' + esc(e.error);
+        }
+      }
+      $('banner').innerHTML = why;
     } else {
       $('banner').className = ''; $('banner').textContent = '';
     }
@@ -258,6 +266,7 @@ class UGOS:
             "blocked": False, "real": real, "saved": real, "answer": answer,
             "steps": run["steps"], "provider": run.get("provider"),
             "model": run.get("model"), "seconds": run.get("seconds", 0),
+            "errors": getattr(self.router, "last_errors", []),
         }
 
 

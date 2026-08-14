@@ -19,6 +19,7 @@ Contract:
 """
 
 import json
+import logging
 import os
 import sys
 import urllib.error
@@ -77,10 +78,12 @@ def get_api_key(service: str) -> Optional[str]:
 class OllamaLLMProvider(BaseLLMProvider):
     """Ollama on this machine. No internet, no key, no cost."""
 
-    def __init__(self, model_id: str = "phi3", host: str = None, timeout: int = 120):
+    def __init__(self, model_id: str = "phi3", host: str = None, timeout: int = None):
         super().__init__(provider_name="Ollama", model_id=model_id)
         self.host = (host or cfg.OLLAMA_HOST).rstrip("/")
-        self.timeout = timeout
+        # Local models on CPU are slow, and the agent loop sends a much larger
+        # prompt than a plain question. 120s was not enough for phi3.
+        self.timeout = timeout or getattr(cfg, "LOCAL_TIMEOUT_SECONDS", 300)
 
     def is_available(self) -> bool:
         try:
@@ -98,7 +101,14 @@ class OllamaLLMProvider(BaseLLMProvider):
             return []
 
     def complete(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> Dict[str, Any]:
-        body: Dict[str, Any] = {"model": self.model_id, "prompt": prompt, "stream": False}
+        body: Dict[str, Any] = {
+            "model": self.model_id,
+            "prompt": prompt,
+            "stream": False,
+            # Caps runaway generation. Small models will happily ramble for
+            # thousands of tokens, which is most of where the wait goes.
+            "options": {"num_predict": getattr(cfg, "LOCAL_MAX_TOKENS", 800)},
+        }
         if system_prompt:
             body["system"] = system_prompt
 
@@ -325,6 +335,35 @@ def build_provider(name: Optional[str]) -> Optional[BaseLLMProvider]:
     return None
 
 
+class RecordingRouter(LLMRouter):
+    """
+    LLMRouter that remembers why each provider failed.
+
+    The stock router logs failures to the console and returns the next
+    provider's answer, so a caller sees a mock reply with no explanation.
+    That is how a 120-second Ollama timeout showed up in the web page as
+    "this came from a placeholder" and nothing else.
+    """
+
+    def __init__(self, primary_provider, fallback_providers=None):
+        super().__init__(primary_provider, fallback_providers)
+        self.last_errors: List[Dict[str, str]] = []
+
+    def generate(self, prompt: str, system_prompt: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+        self.last_errors = []
+        for provider in [self.primary_provider] + self.fallback_providers:
+            try:
+                return provider.complete(prompt=prompt, system_prompt=system_prompt, **kwargs)
+            except Exception as exc:
+                message = str(exc)
+                if "timed out" in message.lower() or "timeout" in message.lower():
+                    message = (f"{provider.model_id} did not reply in time. Local models are slow on "
+                               f"CPU; try a smaller model, or switch to a cloud brain in ugos_config.py.")
+                self.last_errors.append({"provider": provider.provider_name, "error": message[:400]})
+                logging.warning(f"Provider {provider.provider_name} failed: {exc}")
+        return {"status": "ERROR", "content": "All LLM providers in the fallback chain failed.", "provider": None}
+
+
 def build_router() -> LLMRouter:
     """Assembles the router described by ugos_config.py."""
     primary = build_provider(cfg.PRIMARY)
@@ -341,7 +380,7 @@ def build_router() -> LLMRouter:
     if getattr(cfg, "ALLOW_MOCK_FALLBACK", True):
         fallbacks.append(MockLLMProvider())
 
-    return LLMRouter(primary_provider=primary, fallback_providers=fallbacks)
+    return RecordingRouter(primary_provider=primary, fallback_providers=fallbacks)
 
 
 def describe_setup() -> Dict[str, Any]:

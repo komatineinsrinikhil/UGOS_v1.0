@@ -69,6 +69,12 @@ ENDPOINTS = {
 
 OLLAMA_HOST = "http://localhost:11434"
 
+# How long to wait for a LOCAL model before giving up, and how many tokens to
+# let it produce. Local models on CPU are slow: phi3 driving the agent loop
+# regularly needs more than two minutes. Cloud brains ignore these.
+LOCAL_TIMEOUT_SECONDS = 300
+LOCAL_MAX_TOKENS = 800
+
 # Local services need no key. Cloud ones do.
 NEEDS_KEY = {"gemini", "groq", "openrouter", "openai", "together"}
 
