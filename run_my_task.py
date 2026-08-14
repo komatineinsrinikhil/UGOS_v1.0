@@ -1,117 +1,147 @@
+"""
+UGOS -- Run One Task
+--------------------
+Sends a single request through the full UGOS pipeline:
+
+    your question
+        -> Zero-Trust security check (is this agent allowed to make the call?)
+        -> LLM router (local model first, mock fallback if it is down)
+        -> persistent memory (answer saved to ugos_memory.db)
+
+Usage:
+    python run_my_task.py                       ask interactively
+    python run_my_task.py "your question here"  ask directly
+"""
+
 import sys
-import os
-import json
-import urllib.request
-import urllib.error
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Path Resolution (Handles both repository root and 'src' directory)
-# ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
-SRC_DIR = BASE_DIR / "src"
+for _p in (str(BASE_DIR), str(BASE_DIR / "src")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-for path in [str(BASE_DIR), str(SRC_DIR)]:
-    if path not in sys.path:
-        sys.path.insert(0, path)
+from ugos.core.memory import MemoryEngine
+from ugos.llm.router import LLMRouter, MockLLMProvider
+from ugos.security.policy import SecurityAction
+from ugos.agents.specialized import SoftwareEngineerAgent
 
-# Fallback import handler for 'ugos' vs 'src.ugos'
-try:
-    from ugos.security.policy import PolicyEngine
-    from ugos.core.memory import MemoryEngine
-    from ugos.agents.specialized import SoftwareEngineerAgent
-    from ugos.llm.router import LLMRouter, BaseLLMProvider
-except ModuleNotFoundError:
-    from src.ugos.security.policy import PolicyEngine
-    from src.ugos.core.memory import MemoryEngine
-    from src.ugos.agents.specialized import SoftwareEngineerAgent
-    from src.ugos.llm.router import LLMRouter, BaseLLMProvider
+from ugos_providers import OllamaLLMProvider, is_real_answer
 
+MODEL_NAME = "phi3"
+DEFAULT_PROMPT = "Write a 3-line Python function to compute the Fibonacci sequence."
+SESSION_ID = "sess_cli_01"
 
-# ---------------------------------------------------------------------------
-# Local Ollama Provider (100% Offline)
-# ---------------------------------------------------------------------------
-class OllamaLLMProvider(BaseLLMProvider):
-    """Local LLM Provider for Ollama HTTP API (100% Offline)."""
-
-    def __init__(self, model_name: str = "phi3", host: str = "http://localhost:11434"):
-        # Match exact BaseLLMProvider positional parameters: (provider_name, model_id)
-        super().__init__("OllamaLocal", model_name)
-        self.model_name = model_name
-        self.model_id = model_name
-        self.host = host.rstrip('/')
-
-    def complete(self, prompt: str, **kwargs) -> str:
-        """Sends inference request to local Ollama server."""
-        url = f"{self.host}/api/generate"
-        payload = json.dumps({
-            "model": self.model_name,
-            "prompt": prompt,
-            "stream": False
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            url,
-            data=payload,
-            headers={"Content-Type": "application/json"}
-        )
-
-        try:
-            with urllib.request.urlopen(req, timeout=60) as response:
-                result = json.loads(response.read().decode("utf-8"))
-                return result.get("response", "")
-        except urllib.error.URLError as e:
-            raise RuntimeError(f"Ollama server unreachable at {self.host}: {e}")
-
-    def generate(self, prompt: str, **kwargs) -> str:
-        return self.complete(prompt, **kwargs)
+LINE = "=" * 62
 
 
-# ---------------------------------------------------------------------------
-# Main Execution Workflow
-# ---------------------------------------------------------------------------
-def main():
-    print("\n" + "=" * 60)
-    print("🤖 Executing UGOS Task under Zero-Trust Security & Phi-3 LLM")
-    print("=" * 60)
+def get_prompt() -> str:
+    """Command-line argument, else ask the user, else the default demo prompt."""
+    if len(sys.argv) > 1:
+        return " ".join(sys.argv[1:]).strip()
+    try:
+        typed = input("\nWhat would you like UGOS to do?\n(press Enter for the demo task)\n> ").strip()
+    except EOFError:
+        return DEFAULT_PROMPT
+    return typed or DEFAULT_PROMPT
 
-    # 1. Initialize Core Engines
-    policy = PolicyEngine(default_profile="STANDARD")
-    memory = MemoryEngine(db_path=Path("ugos_memory.db"))
-    
-    # Initialize Agent cleanly
+
+def main() -> int:
+    print("\n" + LINE)
+    print(" UGOS -- Task Execution under Zero-Trust Security")
+    print(LINE)
+
+    prompt = get_prompt()
+
+    # ------------------------------------------------------------------
+    # 1. Core engines
+    # ------------------------------------------------------------------
+    memory = MemoryEngine(db_path=BASE_DIR / "ugos_memory.db")
+    session = memory.get_or_create_session(SESSION_ID)
     agent = SoftwareEngineerAgent(name="DevBot")
 
-    # 2. Configure Local Ollama Router
-    ollama_provider = OllamaLLMProvider(model_name="phi3")
-    router = LLMRouter(primary_provider=ollama_provider)
+    # ------------------------------------------------------------------
+    # 2. Providers: real model first, mock as a safety net
+    # ------------------------------------------------------------------
+    ollama = OllamaLLMProvider(model_id=MODEL_NAME)
+    router = LLMRouter(
+        primary_provider=ollama,
+        fallback_providers=[MockLLMProvider()],
+    )
 
-    # 3. Execute Task under Security Policy
-    prompt = "Write a 3-line Python function to compute the Fibonacci sequence."
-    print(f"\nPrompt: '{prompt}'")
+    # Friendly pre-flight so the failure is explained, not just thrown
+    if not ollama.is_available():
+        print("\n  [!] Ollama is not running on this machine.")
+        print("      Open Ollama from the Start menu (look for the tray icon),")
+        print("      or run:  ollama serve")
+        print("      UGOS will still run, but only the mock provider can answer.\n")
+    else:
+        available = ollama.installed_models()
+        if available and not any(m.split(":")[0] == MODEL_NAME for m in available):
+            print(f"\n  [!] Model '{MODEL_NAME}' is not downloaded yet.")
+            print(f"      Run:  ollama pull {MODEL_NAME}")
+            print(f"      Currently installed: {', '.join(available)}\n")
 
-    authorized = True
-    if hasattr(agent, "can_execute"):
-        try:
-            authorized = agent.can_execute("FILE_WRITE")
-        except Exception:
-            authorized = True
+    print(f"\nRequest: {prompt}")
 
-    if authorized:
-        print("\n🔐 [SECURITY CHECK]: Execution AUTHORIZED by PolicyEngine.")
-        print("⚡ Sending request to local Ollama (Phi-3)...")
+    # ------------------------------------------------------------------
+    # 3. Zero-Trust check -- this is a REAL policy decision.
+    #
+    #    The previous version called agent.can_execute(), a method that does
+    #    not exist on BaseAgent. hasattr() returned False, the check was
+    #    skipped, and the script printed "AUTHORIZED" without ever asking
+    #    the PolicyEngine anything. evaluate_and_act() is the real gate.
+    # ------------------------------------------------------------------
+    verdict = agent.evaluate_and_act(
+        action=SecurityAction.NETWORK_CALL,
+        target=f"ollama://{MODEL_NAME}",
+    )
 
-        try:
-            response = router.generate(prompt)
-            print("\n--- [Local Phi-3 Response] ---")
-            print(response)
-            print("-------------------------------")
+    if verdict.get("status") != "SUCCESS":
+        print(f"\n  [BLOCKED] {verdict.get('reason', 'Denied by security policy.')}")
+        session.log_event(agent.agent_id, "llm_request_blocked", {"prompt": prompt})
+        print(LINE + "\n")
+        return 1
 
-            memory.set_global_fact(key="fibonacci_task", value=response, tags=["phi3", "offline"])
-            print("\n💾 Success: Result persisted to 'ugos_memory.db'.\n")
-        except Exception as e:
-            print(f"\n❌ Local LLM Error: {e}")
+    print("  [SECURITY] Authorized by PolicyEngine.")
+    print(f"  [ROUTER]   Sending to {MODEL_NAME} on this machine...")
+
+    # ------------------------------------------------------------------
+    # 4. Ask the model
+    # ------------------------------------------------------------------
+    result = router.generate(prompt)
+    answer = result.get("content", "")
+
+    print("\n" + "-" * 62)
+    print(answer if answer else "(no content returned)")
+    print("-" * 62)
+
+    # ------------------------------------------------------------------
+    # 5. Save ONLY if a real model answered.
+    #
+    #    The previous version printed "Success: persisted" no matter what,
+    #    because router.generate() returns an error dict instead of raising.
+    #    That wrote error messages into ugos_memory.db as if they were answers.
+    # ------------------------------------------------------------------
+    if is_real_answer(result):
+        memory.set_global_fact(
+            key=f"answer::{prompt[:60]}",
+            value=answer,
+            tags=[result.get("provider", "unknown"), result.get("model", MODEL_NAME)],
+        )
+        session.log_event(agent.agent_id, "llm_request", {"prompt": prompt, "provider": result.get("provider")})
+        print(f"\n  [SAVED] Answer stored in ugos_memory.db (via {result.get('provider')}).")
+        print(LINE + "\n")
+        return 0
+
+    if result.get("status") == "ERROR":
+        print("\n  [FAILED] No provider could answer. Nothing was saved.")
+    else:
+        print(f"\n  [NOT SAVED] Answered by '{result.get('provider')}', which is a")
+        print("              placeholder, not a real model. Real answers only get saved.")
+    print(LINE + "\n")
+    return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
