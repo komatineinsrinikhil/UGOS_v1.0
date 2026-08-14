@@ -45,6 +45,8 @@ Working and tested:
 - Provider routing across eight backends with a fallback chain
 - Read-only agent loop with per-tool policy enforcement
 - Local web interface and Windows double-click launchers
+- Public bring-your-own-key demo mode: no server key, no memory writes,
+  per-IP rate limiting, prompt length cap
 
 ## CLOSED SINCE THE LAST UPDATE (2026-08-14)
 
@@ -110,7 +112,6 @@ Pick one; none is in progress:
 
 1. Add write access to the agent: sandbox roots + diff + confirmation
 2. Build the UGOS_800 probe harness and add the missing tests from UGOS_900
-3. Host UGOS behind a public URL — needs a server, `HOST = "0.0.0.0"`, and
-   authentication. Without a login, anyone with the link can spend the API key
-   and read the sandbox.
+3. Deploy the public demo (code is ready: `UGOS_PUBLIC=1`, `render.yaml`,
+   `Procfile`). Remaining work is choosing a host and pushing.
 4. Write tools for the L3 actions so the level is exercised, not just enforced

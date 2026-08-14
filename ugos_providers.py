@@ -364,6 +364,45 @@ class RecordingRouter(LLMRouter):
         return {"status": "ERROR", "content": "All LLM providers in the fallback chain failed.", "provider": None}
 
 
+def build_router_for(service: str, api_key: Optional[str], allow_mock: bool = False) -> LLMRouter:
+    """
+    Router for a caller-supplied key -- the public demo path.
+
+    The server holds no key in this mode. Whatever the visitor pastes is used
+    for that one request and never stored, logged, or written to disk.
+    """
+    service = (service or "").lower().strip()
+    model = cfg.MODELS.get(service, "")
+
+    if service == "gemini":
+        provider = GeminiProvider(model_id=model or "gemini-3.5-flash", api_key=api_key)
+    elif service in cfg.ENDPOINTS:
+        provider = OpenAICompatibleProvider(
+            service=service, model_id=model,
+            base_url=cfg.ENDPOINTS[service], api_key=api_key,
+        )
+    else:
+        raise RuntimeError(f"Unknown service '{service}'.")
+
+    fallbacks = [MockLLMProvider()] if allow_mock else []
+    return RecordingRouter(primary_provider=provider, fallback_providers=fallbacks)
+
+
+def public_services() -> List[Dict[str, str]]:
+    """Services a visitor can supply their own key for, with where to get one."""
+    where = {
+        "gemini": "https://aistudio.google.com/apikey",
+        "groq": "https://console.groq.com/keys",
+        "openrouter": "https://openrouter.ai/keys",
+        "openai": "https://platform.openai.com/api-keys",
+        "together": "https://api.together.xyz/settings/api-keys",
+    }
+    return [
+        {"id": s, "model": cfg.MODELS.get(s, ""), "keyUrl": where.get(s, "")}
+        for s in ("gemini", "groq", "openrouter", "openai", "together")
+    ]
+
+
 def build_router() -> LLMRouter:
     """Assembles the router described by ugos_config.py."""
     primary = build_provider(cfg.PRIMARY)

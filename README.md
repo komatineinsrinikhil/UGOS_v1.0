@@ -197,6 +197,38 @@ design, not code.
 
 ---
 
+## Public demo mode
+
+UGOS can run on the internet as a bring-your-own-key demo. In that mode **the
+server holds no API key at all** — each visitor supplies their own, it is used
+for one request, and it is never stored, logged, or written to disk. Nobody can
+run up a bill on your account, because there is no account on the server to
+bill.
+
+```bash
+UGOS_PUBLIC=1 python ugos_web.py
+```
+
+What changes in public mode:
+
+| | Local | Public |
+|---|---|---|
+| API key | yours, from `.env` | the visitor's, per request, never retained |
+| Binds to | `127.0.0.1` | `0.0.0.0`, port from `$PORT` |
+| Memory writes | on | **off** — strangers' questions do not accumulate |
+| Mock fallback | on | off — a failure is reported, not papered over |
+| Rate limit | none | 15 requests / 10 min per IP |
+| Prompt length | unlimited | 2,000 characters |
+
+Deploying to Render, Railway or Fly needs no build step, since UGOS has no
+dependencies beyond the standard library. `render.yaml` and `Procfile` are
+included; the only required setting is `UGOS_PUBLIC=1`.
+
+**Before deploying**, check that no `.env` is in the deployed copy —
+`.gitignore` keeps it out of the repository, which is the point.
+
+---
+
 ## Where this came from
 
 UGOS did not start as software. It began as nine Word documents describing how a

@@ -14,10 +14,12 @@ the page has no CDN dependencies and works with the network off.
 """
 
 import json
+import os
 import sys
 import threading
 import time
 import webbrowser
+from collections import defaultdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -31,12 +33,27 @@ from ugos.security.policy import SecurityAction
 from ugos.agents.specialized import SoftwareEngineerAgent
 
 import ugos_config as cfg
-from ugos_providers import build_router, describe_setup
+from ugos_providers import build_router, build_router_for, describe_setup, public_services
 from ugos_agent import run_agent, ReadOnlyToolbox
 
-HOST = "127.0.0.1"
-PORT = 8000
+# ---------------------------------------------------------------------------
+# PUBLIC DEMO MODE
+#
+# Set UGOS_PUBLIC=1 to run this as a bring-your-own-key demo on the internet.
+# In that mode the server holds NO API key: each visitor supplies their own,
+# it is used for one request and never stored, logged or written to disk.
+# Memory writes are disabled so strangers' questions do not accumulate on the
+# server, and requests are rate limited per IP.
+# ---------------------------------------------------------------------------
+PUBLIC = os.environ.get("UGOS_PUBLIC", "").strip() in ("1", "true", "yes")
+
+HOST = os.environ.get("UGOS_HOST") or ("0.0.0.0" if PUBLIC else "127.0.0.1")
+PORT = int(os.environ.get("PORT") or os.environ.get("UGOS_PORT") or 8000)
 SESSION_ID = "sess_web_01"
+
+MAX_PROMPT_CHARS = 2000
+RATE_LIMIT = 15          # requests per window, per IP
+RATE_WINDOW = 600        # seconds
 
 PAGE = r"""<!DOCTYPE html>
 <html lang="en">
@@ -82,6 +99,41 @@ PAGE = r"""<!DOCTYPE html>
   .dot.ok { background:var(--ok); box-shadow:0 0 0 3px rgba(63,185,80,.15); }
   .dot.warn { background:var(--warn); box-shadow:0 0 0 3px rgba(210,153,34,.15); }
   .dot.bad { background:var(--bad); box-shadow:0 0 0 3px rgba(248,81,73,.15); }
+
+  .keybtn {
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    font:inherit; font-size:11.5px; padding:5px 12px; border-radius:100px;
+    cursor:pointer; display:flex; align-items:center; gap:7px; transition:all .18s;
+  }
+  .keybtn:hover { color:var(--text); border-color:var(--dim); }
+  .sheet {
+    position:fixed; inset:0; background:rgba(0,0,0,.6); display:none;
+    place-items:center; z-index:50; backdrop-filter:blur(3px);
+  }
+  .sheet.open { display:grid; }
+  .card {
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:26px; width:min(480px,92vw); animation:rise .25s;
+  }
+  .card h3 { margin:0 0 6px; font-size:17px; font-weight:620; }
+  .card p { margin:0 0 18px; color:var(--muted); font-size:13px; line-height:1.6; }
+  .card label { display:block; font-size:11.5px; color:var(--muted); margin:14px 0 6px;
+    text-transform:uppercase; letter-spacing:.05em; }
+  .card select, .card input {
+    width:100%; padding:11px 13px; background:var(--bg); color:var(--text);
+    border:1px solid var(--line); border-radius:9px; font:inherit; outline:none;
+  }
+  .card select:focus, .card input:focus { border-color:var(--accent-dim); }
+  .card .row2 { display:flex; gap:10px; margin-top:20px; }
+  .card button {
+    flex:1; padding:11px; border-radius:9px; font:600 14px inherit; cursor:pointer;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--text);
+  }
+  .card button.primary { background:var(--accent); color:#08101d; border-color:var(--accent); }
+  .card .where { font-size:12px; margin-top:9px; }
+  .card .where a { color:var(--accent); text-decoration:none; }
+  .privacy { margin-top:18px; padding:11px 13px; background:var(--bg);
+    border:1px solid var(--line); border-radius:9px; font-size:12px; color:var(--muted); }
 
   /* ---------- thread ---------- */
   main { flex:1; overflow-y:auto; scroll-behavior:smooth; }
@@ -246,7 +298,32 @@ PAGE = r"""<!DOCTYPE html>
 <header>
   <div class="brand">UGOS<span>every action passes a security check</span></div>
   <div class="pills" id="pills"></div>
+  <button class="keybtn" id="keybtn" style="display:none">
+    <span class="dot" id="keydot"></span><span id="keylabel">Add your key</span>
+  </button>
 </header>
+
+<div class="sheet" id="sheet">
+  <div class="card">
+    <h3>Bring your own key</h3>
+    <p>This demo ships with no API key of its own, so nothing you do here is
+       billed to anyone but you. Pick a service and paste a key.</p>
+    <label for="svc">Service</label>
+    <select id="svc"></select>
+    <div class="where" id="where"></div>
+    <label for="key">API key</label>
+    <input id="key" type="password" placeholder="paste your key" autocomplete="off" spellcheck="false">
+    <div class="privacy">
+      Your key is held in this browser tab only and sent with each request to
+      use it. It is never stored on the server, written to disk, or logged.
+      Closing the tab forgets it.
+    </div>
+    <div class="row2">
+      <button id="clearkey">Forget key</button>
+      <button class="primary" id="savekey">Save</button>
+    </div>
+  </div>
+</div>
 
 <main id="main">
   <div class="thread" id="thread">
@@ -368,9 +445,52 @@ function pill(role, b) {
          '<span>' + esc(b.model || '') + '</span></div>';
 }
 
+let CFG = {public:false, services:[]};
+const KEY_STORE = 'ugos_key', SVC_STORE = 'ugos_service';
+const getKey = () => sessionStorage.getItem(KEY_STORE) || '';
+const getSvc = () => sessionStorage.getItem(SVC_STORE) || 'gemini';
+
+function paintKeyButton() {
+  if (!CFG.public) return;
+  const has = !!getKey();
+  $('keydot').className = 'dot ' + (has ? 'ok' : 'warn');
+  $('keylabel').textContent = has ? getSvc() + ' key set' : 'Add your key';
+}
+
+function openSheet() {
+  const sel = $('svc');
+  sel.innerHTML = CFG.services.map(s =>
+    '<option value="' + s.id + '">' + s.id + ' \u2014 ' + esc(s.model) + '</option>').join('');
+  sel.value = getSvc();
+  $('key').value = getKey();
+  paintWhere();
+  $('sheet').classList.add('open');
+  $('key').focus();
+}
+
+function paintWhere() {
+  const s = CFG.services.find(x => x.id === $('svc').value);
+  $('where').innerHTML = s && s.keyUrl
+    ? 'Get a key: <a href="' + s.keyUrl + '" target="_blank" rel="noopener">' + s.keyUrl + '</a>'
+    : '';
+}
+
+async function loadConfig() {
+  try {
+    CFG = await (await fetch('/config')).json();
+    if (CFG.public) { $('keybtn').style.display = 'flex'; paintKeyButton(); }
+  } catch (e) {}
+}
+
 async function refreshStatus() {
   try {
     const s = await (await fetch('/status')).json();
+    if (s.public) {
+      const has = !!getKey();
+      $('pills').innerHTML = '<div class="pill"><span class="dot ' + (has?'ok':'warn') +
+        '"></span><span>public demo</span><b>' + (has ? esc(getSvc()) : 'no key') + '</b></div>';
+      return;
+    }
     $('pills').innerHTML = pill('primary', s.primary) + pill('fallback', s.fallback);
   } catch (e) {
     $('pills').innerHTML = '<div class="pill"><span class="dot bad"></span>offline</div>';
@@ -418,11 +538,18 @@ async function ask(text) {
   const started = Date.now();
 
   try {
+    const payload = {prompt: text};
+    if (CFG.public) { payload.apiKey = getKey(); payload.service = getSvc(); }
     const r = await fetch('/ask', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({prompt: text})
+      body: JSON.stringify(payload)
     });
     const d = await r.json();
+    if (d.error) {
+      body.innerHTML = '<div class="note bad">' + esc(d.error) + '</div>';
+      if (CFG.public && !getKey()) openSheet();
+      return;
+    }
 
     let note = '';
     if (d.blocked) note = '<div class="note bad">Blocked by the security policy before anything ran.</div>';
@@ -482,7 +609,22 @@ document.addEventListener('click', e => {
   }
 });
 
-refreshStatus();
+$('keybtn').onclick = openSheet;
+$('sheet').onclick = e => { if (e.target === $('sheet')) $('sheet').classList.remove('open'); };
+document.addEventListener('change', e => { if (e.target.id === 'svc') paintWhere(); });
+document.addEventListener('click', e => {
+  if (e.target.id === 'savekey') {
+    sessionStorage.setItem(KEY_STORE, $('key').value.trim());
+    sessionStorage.setItem(SVC_STORE, $('svc').value);
+    $('sheet').classList.remove('open'); paintKeyButton(); refreshStatus();
+  }
+  if (e.target.id === 'clearkey') {
+    sessionStorage.removeItem(KEY_STORE);
+    $('key').value = ''; paintKeyButton(); refreshStatus();
+  }
+});
+
+loadConfig().then(refreshStatus);
 setInterval(refreshStatus, 30000);
 ta.focus();
 </script>
@@ -498,10 +640,21 @@ class UGOS:
         self.memory = MemoryEngine(db_path=BASE_DIR / "ugos_memory.db")
         self.session = self.memory.get_or_create_session(SESSION_ID)
         self.agent = SoftwareEngineerAgent(name="WebBot")
-        self.router = build_router()
+        self.router = None if PUBLIC else build_router()
         self.toolbox = ReadOnlyToolbox(sandbox_root=BASE_DIR)
+        self.hits = defaultdict(list)
 
-    def ask(self, prompt: str) -> dict:
+    def rate_ok(self, ip: str) -> bool:
+        """Simple per-IP window. Public endpoints get found by bots."""
+        now = time.time()
+        recent = [t for t in self.hits[ip] if now - t < RATE_WINDOW]
+        self.hits[ip] = recent
+        if len(recent) >= RATE_LIMIT:
+            return False
+        recent.append(now)
+        return True
+
+    def ask(self, prompt: str, api_key: str = None, service: str = None) -> dict:
         # Outer gate: may this agent talk to a model at all?
         verdict = self.agent.evaluate_and_act(
             action=SecurityAction.NETWORK_CALL,
@@ -515,12 +668,25 @@ class UGOS:
                 "provider": None, "model": None, "seconds": 0, "errors": [],
             }
 
+        # In public mode the key belongs to the visitor, so the router is built
+        # per request and discarded. Nothing is retained between callers.
+        if PUBLIC:
+            try:
+                router = build_router_for(service, api_key, allow_mock=False)
+            except Exception as exc:
+                return {"blocked": False, "real": False, "saved": False, "steps": [],
+                        "answer": str(exc), "provider": None, "model": None,
+                        "seconds": 0, "errors": []}
+        else:
+            router = self.router
+
         # Inner gates: every tool the model asks for is checked individually.
-        run = run_agent(self.router, prompt, toolbox=self.toolbox)
+        run = run_agent(router, prompt, toolbox=self.toolbox)
         answer = run["answer"]
         real = not run["failed"] and "mock" not in (run.get("provider") or "").lower()
 
-        if real:
+        # Public visitors' questions are not written to the server's memory.
+        if real and not PUBLIC:
             self.memory.set_global_fact(
                 key=f"answer::{prompt[:60]}",
                 value=answer,
@@ -532,10 +698,10 @@ class UGOS:
             )
 
         return {
-            "blocked": False, "real": real, "saved": real, "answer": answer,
+            "blocked": False, "real": real, "saved": real and not PUBLIC, "answer": answer,
             "steps": run["steps"], "provider": run.get("provider"),
             "model": run.get("model"), "seconds": run.get("seconds", 0),
-            "errors": getattr(self.router, "last_errors", []),
+            "errors": getattr(router, "last_errors", []),
         }
 
 
@@ -557,7 +723,15 @@ class Handler(BaseHTTPRequestHandler):
         if self.path in ("/", "/index.html"):
             self._send(200, PAGE, "text/html; charset=utf-8")
         elif self.path == "/status":
-            self._send(200, json.dumps(describe_setup()), "application/json")
+            payload = {"public": PUBLIC}
+            payload.update({} if PUBLIC else describe_setup())
+            self._send(200, json.dumps(payload), "application/json")
+        elif self.path == "/config":
+            self._send(200, json.dumps({
+                "public": PUBLIC,
+                "services": public_services() if PUBLIC else [],
+                "maxPrompt": MAX_PROMPT_CHARS,
+            }), "application/json")
         else:
             self._send(404, "Not found", "text/plain")
 
@@ -567,12 +741,40 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             length = int(self.headers.get("Content-Length", 0))
+            if length > 64_000:
+                self._send(413, json.dumps({"error": "request too large"}), "application/json")
+                return
             data = json.loads(self.rfile.read(length) or b"{}")
             prompt = (data.get("prompt") or "").strip()
             if not prompt:
                 self._send(400, json.dumps({"error": "empty prompt"}), "application/json")
                 return
-            self._send(200, json.dumps(self.ugos.ask(prompt)), "application/json")
+            if len(prompt) > MAX_PROMPT_CHARS:
+                self._send(400, json.dumps({
+                    "error": f"prompt too long (max {MAX_PROMPT_CHARS} characters)"}),
+                    "application/json")
+                return
+
+            ip = self.headers.get("X-Forwarded-For", self.client_address[0]).split(",")[0].strip()
+            if not self.ugos.rate_ok(ip):
+                self._send(429, json.dumps({
+                    "error": f"Too many requests. Limit is {RATE_LIMIT} per "
+                             f"{RATE_WINDOW // 60} minutes."}), "application/json")
+                return
+
+            if PUBLIC:
+                key = (data.get("apiKey") or "").strip()
+                service = (data.get("service") or "gemini").strip()
+                if not key:
+                    self._send(400, json.dumps({
+                        "error": "No API key. This demo does not include one -- "
+                                 "add your own with the Key button."}), "application/json")
+                    return
+                result = self.ugos.ask(prompt, api_key=key, service=service)
+            else:
+                result = self.ugos.ask(prompt)
+
+            self._send(200, json.dumps(result), "application/json")
         except Exception as exc:
             self._send(500, json.dumps({"error": str(exc)}), "application/json")
 
@@ -583,6 +785,22 @@ def main() -> int:
     print("=" * 64)
 
     Handler.ugos = UGOS()
+
+    if PUBLIC:
+        print("  MODE: public demo -- bring your own key")
+        print("  No API key is held by this server. Visitors supply their own.")
+        print("  Memory writes disabled. Rate limit "
+              f"{RATE_LIMIT} requests / {RATE_WINDOW // 60} min per IP.")
+        print(f"\n  Listening on {HOST}:{PORT}\n")
+        server = ThreadingHTTPServer((HOST, PORT), Handler)
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print("\n  Stopped.\n")
+        finally:
+            server.server_close()
+        return 0
+
     setup = describe_setup()
 
     for role in ("primary", "fallback"):

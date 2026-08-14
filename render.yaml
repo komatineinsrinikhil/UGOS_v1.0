@@ -1,0 +1,16 @@
+# Deploy UGOS as a public bring-your-own-key demo.
+#
+# The server holds NO API key. Each visitor supplies their own, it is used for
+# one request, and it is never stored, logged or written to disk.
+services:
+  - type: web
+    name: ugos-demo
+    runtime: python
+    plan: free
+    buildCommand: ""          # no dependencies -- standard library only
+    startCommand: python ugos_web.py
+    envVars:
+      - key: UGOS_PUBLIC
+        value: "1"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
