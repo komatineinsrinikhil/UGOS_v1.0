@@ -7,7 +7,7 @@ No API keys live in this file -- see "WHERE KEYS GO" at the bottom.
 
 QUICK START
 -----------
-Offline, private, free  ->  PRIMARY = "gemini"      (needs Ollama running)
+Offline, private, free  ->  PRIMARY = "ollama"      (needs Ollama running)
 Best answers, no download ->  PRIMARY = "gemini"    (needs a free Google key)
 Fastest answers          ->  PRIMARY = "groq"       (needs a free Groq key)
 Many models, one key     ->  PRIMARY = "openrouter" (needs an OpenRouter key)
