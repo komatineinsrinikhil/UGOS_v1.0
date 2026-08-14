@@ -72,6 +72,9 @@ Working and tested:
   fail-closed default on evaluation error.
 - **`UGOS_201` rewritten** as the real base agent contract; it previously
   duplicated `UGOS_210_Research_Agent.md`.
+- **Spec markdown repaired across all 52 files.** 7,466 backslash escapes and
+  1,105 `&#x20;` entities removed, 39 unterminated code fences closed. Verified
+  by word-level diff: content identical, formatting only.
 
 ## OPEN GAPS
 
@@ -83,20 +86,21 @@ Working and tested:
 - **L3 grants nothing beyond L2** under the current five `SecurityAction`
   values. The level exists to match the spec ladder; it gates nothing new until
   delegation and database actions are defined.
-- **Spec markdown is damaged.** Every file under `00_Master` through `10_SDK`
-  contains backslash-escaped markdown (`\#`, `\*\*`, `\_`) and `&#x20;` entities
-  from a bad paste; several have unterminated code fences that swallow later
-  sections. `UGOS_104_Task_Router.md` is the clearest example.
+- **Run-together paragraphs remain in 22 spec files.** The escape damage was
+  repaired, but the original paste also destroyed newlines inside some
+  paragraphs, gluing sentences together. Numbered headings were restored
+  automatically; sentence boundaries inside paragraphs cannot be reconstructed
+  without guessing, so those need a human pass. `UGOS_104` section 3 and the
+  revision-history tables are the clearest cases.
 
 ## NEXT RESUME POINTS
 
 Pick one; none is in progress:
 
-1. Clean the spec markdown (56 files) — mechanical, unblocks reading them at all
-2. Add write access to the agent: sandbox roots + diff + confirmation
-3. Draft one of the reserved modules (07 / 09 / 11)
-4. Host UGOS behind a public URL — needs a server, `HOST = "0.0.0.0"`, and
+1. Add write access to the agent: sandbox roots + diff + confirmation
+2. Draft one of the reserved modules (07 / 09 / 11)
+3. Host UGOS behind a public URL — needs a server, `HOST = "0.0.0.0"`, and
    authentication. Without a login, anyone with the link can spend the API key
    and read the sandbox.
-5. Define distinct actions for L3 (delegation, API routing, database access) so
+4. Define distinct actions for L3 (delegation, API routing, database access) so
    the level gates something beyond L2
