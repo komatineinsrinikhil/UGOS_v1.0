@@ -88,6 +88,16 @@ class ReadOnlyToolbox:
             lines.append(f'- {spec["name"]}({args}) -- {spec["description"]}')
         return "\n".join(lines)
 
+    def _resolve(self, path: str) -> str:
+        """
+        Anchor relative paths to the sandbox root, not the process working
+        directory. Without this, launching UGOS from anywhere other than the
+        project folder makes "." resolve outside the sandbox and every request
+        gets refused for the wrong reason.
+        """
+        p = Path(path)
+        return str(p if p.is_absolute() else (self.root / p))
+
     # -- dispatch ----------------------------------------------------------
 
     def run(self, name: str, args: Dict[str, Any], agent_id: str = "ag_reader_01") -> Dict[str, Any]:
@@ -108,11 +118,12 @@ class ReadOnlyToolbox:
         if not path:
             return {"allowed": False, "output": "read_file needs a 'path'."}
 
+        target = self._resolve(path)
         result = self.tools.execute_tool(
             tool_name="file_reader",
             agent_id=agent_id,
             permission_level=self.permission_level,
-            target=path,
+            target=target,
         )
 
         if result.get("status") == "DENIED":
@@ -130,11 +141,12 @@ class ReadOnlyToolbox:
         return {"allowed": True, "output": content}
 
     def _list_dir(self, path: str, agent_id: str) -> Dict[str, Any]:
+        target = self._resolve(path)
         allowed = self.policy.authorize_action(
             agent_id=agent_id,
             permission_level=self.permission_level,
             action=SecurityAction.READ_FILE,
-            target=path,
+            target=target,
         )
         if not allowed:
             decision = self.policy.last_decision() or {}
@@ -143,7 +155,7 @@ class ReadOnlyToolbox:
                 "output": f"REFUSED by the security policy. {decision.get('reason', '')}".strip(),
             }
 
-        folder = Path(path)
+        folder = Path(target)
         if not folder.is_dir():
             return {"allowed": True, "output": f"'{path}' is not a folder."}
 

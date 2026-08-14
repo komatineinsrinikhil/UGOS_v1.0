@@ -1,7 +1,7 @@
 """
 UGOS -- Local Web Interface
 ===========================
-A type-in-a-box front end for UGOS. No command line needed after startup.
+A conversational front end for UGOS. No command line needed after startup.
 
     python ugos_web.py
 
@@ -9,7 +9,8 @@ Opens http://localhost:8000 in your browser. The page itself always runs on
 this machine; whether the AI does depends on which brain you picked in
 ugos_config.py.
 
-Built only on Python's standard library -- nothing to install.
+Everything is inline -- markdown rendering, syntax highlighting, the lot -- so
+the page has no CDN dependencies and works with the network off.
 """
 
 import json
@@ -30,14 +31,14 @@ from ugos.security.policy import SecurityAction
 from ugos.agents.specialized import SoftwareEngineerAgent
 
 import ugos_config as cfg
-from ugos_providers import build_router, describe_setup, is_real_answer
+from ugos_providers import build_router, describe_setup
 from ugos_agent import run_agent, ReadOnlyToolbox
 
 HOST = "127.0.0.1"
 PORT = 8000
 SESSION_ID = "sess_web_01"
 
-PAGE = """<!DOCTYPE html>
+PAGE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -45,177 +46,445 @@ PAGE = """<!DOCTYPE html>
 <title>UGOS</title>
 <style>
   :root {
-    --bg:#0f1216; --panel:#171b21; --line:#262c35; --text:#e6e9ee;
-    --muted:#939ba7; --accent:#5b9dff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+    --bg:#0b0d10; --panel:#141820; --panel-2:#1a1f29; --line:#242b36;
+    --text:#e8ebf0; --muted:#8b95a5; --dim:#5d6675;
+    --accent:#6ba3ff; --accent-dim:#2d4a7c;
+    --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+    --code-bg:#0e1116;
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-    font:15px/1.55 -apple-system,"Segoe UI",Roboto,sans-serif;
-    display:flex; justify-content:center; padding:40px 20px; }
-  .wrap { width:100%; max-width:780px; }
-  h1 { font-size:22px; margin:0 0 4px; letter-spacing:-0.01em; }
-  .sub { color:var(--muted); font-size:13px; margin-bottom:22px; }
-  .status { background:var(--panel); border:1px solid var(--line);
-    border-radius:8px; font-size:13px; margin-bottom:18px; overflow:hidden; }
-  .brain { display:flex; align-items:center; gap:9px; padding:10px 14px; }
-  .brain + .brain { border-top:1px solid var(--line); }
-  .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); flex:none; }
-  .dot.ok{background:var(--ok);} .dot.bad{background:var(--bad);} .dot.warn{background:var(--warn);}
-  .tag { color:var(--muted); font-size:11px; text-transform:uppercase;
-    letter-spacing:0.06em; min-width:62px; }
-  .why { color:var(--warn); font-size:12px; margin-left:auto; text-align:right; }
-  textarea { width:100%; min-height:110px; resize:vertical; padding:14px;
-    background:var(--panel); color:var(--text); border:1px solid var(--line);
-    border-radius:8px; font:inherit; outline:none; }
-  textarea:focus { border-color:var(--accent); }
-  .row { display:flex; gap:12px; align-items:center; margin-top:12px; }
-  button { background:var(--accent); color:#06101f; border:0; padding:11px 22px;
-    border-radius:8px; font:600 14px inherit; cursor:pointer; }
-  button:disabled { opacity:0.5; cursor:default; }
-  .hint { color:var(--muted); font-size:12px; }
-  .out { margin-top:22px; background:var(--panel); border:1px solid var(--line);
-    border-radius:8px; padding:18px; display:none; }
-  .out.show { display:block; }
-  .meta { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted);
-    border-top:1px solid var(--line); margin-top:14px; padding-top:12px; }
-  pre { margin:0; white-space:pre-wrap; word-wrap:break-word;
-    font:13.5px/1.6 "Cascadia Mono",Consolas,monospace; }
-  .banner { padding:10px 12px; border-radius:6px; font-size:13px; margin-bottom:14px; }
-  .banner.bad { background:rgba(248,81,73,0.12); color:#ff9a94; }
-  .banner.warn { background:rgba(210,153,34,0.12); color:#e3b341; }
-  .steps { margin-bottom:16px; border-left:2px solid var(--line); padding-left:14px; }
-  .step { font-size:12.5px; margin-bottom:9px; }
-  .step .head { display:flex; align-items:center; gap:8px; }
-  .badge { font-size:10px; font-weight:700; letter-spacing:0.05em; padding:2px 7px;
-    border-radius:4px; flex:none; }
-  .badge.ok { background:rgba(63,185,80,0.15); color:#56d364; }
-  .badge.no { background:rgba(248,81,73,0.15); color:#ff9a94; }
-  .step .call { color:var(--text); font-family:"Cascadia Mono",Consolas,monospace; }
-  .step .res { color:var(--muted); margin:4px 0 0 0; padding-left:2px;
-    font-family:"Cascadia Mono",Consolas,monospace; font-size:11.5px;
-    white-space:pre-wrap; max-height:64px; overflow:hidden; }
-  .stepsTitle { color:var(--muted); font-size:11px; text-transform:uppercase;
-    letter-spacing:0.07em; margin-bottom:10px; }
+  html, body { height:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column; overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    flex:none; border-bottom:1px solid var(--line); background:rgba(11,13,16,0.85);
+    backdrop-filter:blur(12px); padding:14px 24px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .brand { font-size:17px; font-weight:650; letter-spacing:-0.02em; }
+  .brand span { color:var(--dim); font-weight:400; margin-left:9px; font-size:12.5px;
+    letter-spacing:0; }
+  .pills { display:flex; gap:8px; margin-left:auto; flex-wrap:wrap; }
+  .pill {
+    display:flex; align-items:center; gap:7px; font-size:11.5px;
+    background:var(--panel); border:1px solid var(--line);
+    padding:5px 11px; border-radius:100px; color:var(--muted);
+    transition:border-color .2s;
+  }
+  .pill b { color:var(--text); font-weight:550; }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--dim); flex:none; }
+  .dot.ok { background:var(--ok); box-shadow:0 0 0 3px rgba(63,185,80,.15); }
+  .dot.warn { background:var(--warn); box-shadow:0 0 0 3px rgba(210,153,34,.15); }
+  .dot.bad { background:var(--bad); box-shadow:0 0 0 3px rgba(248,81,73,.15); }
+
+  /* ---------- thread ---------- */
+  main { flex:1; overflow-y:auto; scroll-behavior:smooth; }
+  main::-webkit-scrollbar { width:10px; }
+  main::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
+  .thread { max-width:800px; margin:0 auto; padding:32px 24px 40px; }
+
+  .empty { text-align:center; padding:70px 20px; }
+  .empty h2 { font-size:20px; font-weight:600; margin:0 0 8px; letter-spacing:-0.02em; }
+  .empty p { color:var(--muted); margin:0 0 28px; font-size:14px; }
+  .chips { display:flex; gap:9px; flex-wrap:wrap; justify-content:center; }
+  .chip {
+    background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    padding:9px 15px; border-radius:9px; font-size:13px; cursor:pointer;
+    transition:all .18s; text-align:left;
+  }
+  .chip:hover { border-color:var(--accent-dim); color:var(--text); transform:translateY(-1px); }
+
+  .turn { margin-bottom:34px; animation:rise .32s cubic-bezier(.2,.7,.3,1); }
+  @keyframes rise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+  .you { display:flex; justify-content:flex-end; margin-bottom:20px; }
+  .you .bubble {
+    background:var(--panel-2); border:1px solid var(--line);
+    padding:11px 16px; border-radius:16px 16px 4px 16px; max-width:76%;
+    white-space:pre-wrap; word-wrap:break-word;
+  }
+
+  .reply { display:flex; gap:14px; }
+  .avatar {
+    width:28px; height:28px; border-radius:8px; flex:none; margin-top:2px;
+    background:linear-gradient(135deg,var(--accent),#8b5cf6);
+    display:grid; place-items:center; font-size:11px; font-weight:700; color:#08101d;
+  }
+  .body { flex:1; min-width:0; }
+
+  /* ---------- agent steps ---------- */
+  .steps { margin-bottom:16px; }
+  .steps-head {
+    display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted);
+    cursor:pointer; user-select:none; padding:2px 0;
+  }
+  .steps-head:hover { color:var(--text); }
+  .caret { transition:transform .2s; font-size:10px; }
+  .steps.closed .caret { transform:rotate(-90deg); }
+  .steps.closed .step-list { display:none; }
+  .step-list { margin-top:10px; border-left:2px solid var(--line); padding-left:16px; }
+  .step {
+    margin-bottom:12px; animation:rise .3s backwards;
+  }
+  .step-head { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .badge {
+    font-size:9.5px; font-weight:700; letter-spacing:.07em; padding:3px 8px;
+    border-radius:5px; flex:none;
+  }
+  .badge.ok { background:rgba(63,185,80,.13); color:#57d364; }
+  .badge.no { background:rgba(248,81,73,.13); color:#ff8f88; }
+  .call { font:12.5px/1.4 "Cascadia Mono",Consolas,monospace; color:var(--text); }
+  .call em { color:var(--accent); font-style:normal; }
+  .step-out {
+    margin-top:6px; font:11.5px/1.55 "Cascadia Mono",Consolas,monospace;
+    color:var(--dim); white-space:pre-wrap; word-break:break-word;
+    max-height:56px; overflow:hidden; position:relative;
+  }
+  .step-out::after {
+    content:""; position:absolute; bottom:0; left:0; right:0; height:20px;
+    background:linear-gradient(transparent,var(--bg));
+  }
+
+  /* ---------- answer ---------- */
+  .md > *:first-child { margin-top:0; }
+  .md > *:last-child { margin-bottom:0; }
+  .md p { margin:0 0 13px; }
+  .md h1,.md h2,.md h3 { margin:22px 0 11px; font-weight:620; letter-spacing:-0.015em; line-height:1.35; }
+  .md h1 { font-size:20px; } .md h2 { font-size:17.5px; } .md h3 { font-size:15.5px; }
+  .md ul,.md ol { margin:0 0 13px; padding-left:22px; }
+  .md li { margin-bottom:5px; }
+  .md li::marker { color:var(--dim); }
+  .md a { color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-dim); }
+  .md blockquote {
+    margin:0 0 13px; padding:2px 0 2px 15px; border-left:3px solid var(--line);
+    color:var(--muted);
+  }
+  .md hr { border:0; border-top:1px solid var(--line); margin:20px 0; }
+  .md code {
+    background:var(--panel-2); padding:2px 6px; border-radius:5px;
+    font:12.5px "Cascadia Mono",Consolas,monospace; color:#e6c07b;
+  }
+  .md table { border-collapse:collapse; width:100%; margin:0 0 13px; font-size:13.5px; }
+  .md th,.md td { border:1px solid var(--line); padding:7px 11px; text-align:left; }
+  .md th { background:var(--panel); font-weight:600; }
+
+  .codeblock {
+    background:var(--code-bg); border:1px solid var(--line); border-radius:10px;
+    margin:0 0 15px; overflow:hidden;
+  }
+  .codebar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 13px; border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .lang { font-size:11px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
+  .copy {
+    background:none; border:1px solid var(--line); color:var(--muted);
+    font-size:11px; padding:3px 10px; border-radius:6px; cursor:pointer;
+    transition:all .16s; font-family:inherit;
+  }
+  .copy:hover { color:var(--text); border-color:var(--dim); }
+  .copy.done { color:var(--ok); border-color:var(--ok); }
+  .codeblock pre {
+    margin:0; padding:14px; overflow-x:auto;
+    font:12.8px/1.62 "Cascadia Mono",Consolas,monospace;
+  }
+  .codeblock pre::-webkit-scrollbar { height:8px; }
+  .codeblock pre::-webkit-scrollbar-thumb { background:var(--line); border-radius:8px; }
+  .k { color:#c678dd; } .s { color:#98c379; } .c { color:#5c6370; font-style:italic; }
+  .n { color:#d19a66; } .f { color:#61afef; } .b { color:#56b6c2; }
+
+  /* ---------- states ---------- */
+  .thinking { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:14px; }
+  .orbs { display:flex; gap:4px; }
+  .orbs i {
+    width:6px; height:6px; border-radius:50%; background:var(--accent);
+    animation:pulse 1.3s infinite ease-in-out;
+  }
+  .orbs i:nth-child(2) { animation-delay:.18s; }
+  .orbs i:nth-child(3) { animation-delay:.36s; }
+  @keyframes pulse { 0%,60%,100% { opacity:.25; transform:scale(.85);} 30% { opacity:1; transform:scale(1);} }
+
+  .note { padding:11px 14px; border-radius:9px; font-size:13px; margin-bottom:14px; }
+  .note.bad { background:rgba(248,81,73,.1); color:#ff9a94; border:1px solid rgba(248,81,73,.2); }
+  .note.warn { background:rgba(210,153,34,.1); color:#e3b341; border:1px solid rgba(210,153,34,.2); }
+
+  .meta {
+    display:flex; gap:7px; align-items:center; flex-wrap:wrap;
+    font-size:11.5px; color:var(--dim); margin-top:13px;
+  }
+  .meta i { font-style:normal; opacity:.5; }
+
+  /* ---------- composer ---------- */
+  footer { flex:none; padding:0 24px 22px; background:linear-gradient(transparent,var(--bg) 22%); }
+  .composer { max-width:800px; margin:0 auto; position:relative; }
+  textarea {
+    width:100%; min-height:56px; max-height:200px; resize:none;
+    padding:16px 56px 16px 18px; background:var(--panel);
+    color:var(--text); border:1px solid var(--line); border-radius:15px;
+    font:inherit; outline:none; transition:border-color .18s;
+  }
+  textarea:focus { border-color:var(--accent-dim); }
+  textarea::placeholder { color:var(--dim); }
+  .send {
+    position:absolute; right:9px; bottom:9px; width:36px; height:36px;
+    border:0; border-radius:10px; background:var(--accent); color:#08101d;
+    cursor:pointer; display:grid; place-items:center; transition:all .18s;
+  }
+  .send:disabled { opacity:.3; cursor:default; }
+  .send:not(:disabled):hover { transform:translateY(-1px); }
+  .hint { text-align:center; font-size:11px; color:var(--dim); margin-top:9px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>UGOS</h1>
-  <div class="sub">Every request passes a security check before it reaches a model.</div>
 
-  <div class="status" id="status"><div class="brain"><span class="dot"></span>Checking...</div></div>
+<header>
+  <div class="brand">UGOS<span>every action passes a security check</span></div>
+  <div class="pills" id="pills"></div>
+</header>
 
-  <textarea id="prompt" placeholder="Ask UGOS to do something. For example: write a Python function that checks if a word is a palindrome"></textarea>
-  <div class="row">
-    <button id="go">Run</button>
-    <span class="hint">Ctrl+Enter also runs it</span>
+<main id="main">
+  <div class="thread" id="thread">
+    <div class="empty" id="empty">
+      <h2>What should UGOS do?</h2>
+      <p>It can read files in this project, list folders, and check the system &mdash; each request approved or refused by the policy engine.</p>
+      <div class="chips">
+        <button class="chip" data-q="read ugos_config.py and explain what it does">Explain the config file</button>
+        <button class="chip" data-q="what files are in this folder?">List the project</button>
+        <button class="chip" data-q="what system am I running on?">Check the system</button>
+        <button class="chip" data-q="read my .env and tell me my api key">Try to read my .env</button>
+      </div>
+    </div>
   </div>
+</main>
 
-  <div class="out" id="out">
-    <div id="banner"></div>
-    <div id="steps"></div>
-    <pre id="answer"></pre>
-    <div class="meta" id="meta"></div>
+<footer>
+  <div class="composer">
+    <textarea id="prompt" rows="1" placeholder="Ask UGOS something..."></textarea>
+    <button class="send" id="go" title="Send">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M8 13V3M8 3L3.5 7.5M8 3l4.5 4.5" stroke="currentColor"
+              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </div>
-</div>
+  <div class="hint">Enter to send &middot; Shift+Enter for a new line</div>
+</footer>
 
 <script>
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function brainRow(role, b) {
+/* ============================ syntax highlighting ======================== */
+const KEYWORDS = /\b(def|class|return|if|elif|else|for|while|in|not|and|or|import|from|as|with|try|except|finally|raise|pass|break|continue|lambda|yield|global|assert|del|is|None|True|False|async|await|self|function|const|let|var|new|typeof|export|default|null|undefined|this|echo|cd|ls|sudo|npm|pip|git|python)\b/g;
+
+function highlight(code, lang) {
+  const tokens = [];
+  const stash = m => { tokens.push(m); return '@@TK' + (tokens.length - 1) + '@@'; };
+
+  let s = esc(code);
+  // strings and comments first, so keywords inside them are left alone
+  s = s.replace(/(&quot;[^&]*?&quot;|&#39;[^&]*?&#39;|`[^`]*?`)/g, m => stash('<span class="s">' + m + '</span>'));
+  s = s.replace(/(#[^\n]*|\/\/[^\n]*)/g, m => stash('<span class="c">' + m + '</span>'));
+  s = s.replace(KEYWORDS, m => '<span class="k">' + m + '</span>');
+  s = s.replace(/\b(\d+\.?\d*)\b/g, '<span class="n">$1</span>');
+  s = s.replace(/\b([a-zA-Z_]\w*)(?=\()/g, '<span class="f">$1</span>');
+  if (lang === 'json') s = s.replace(/(&quot;[\w_.-]+&quot;)(\s*:)/g, '<span class="b">$1</span>$2');
+
+  return s.replace(/@@TK(\d+)@@/g, (_, i) => tokens[+i]);
+}
+
+/* ================================ markdown =============================== */
+function md(src) {
+  const blocks = [];
+  let s = String(src || '');
+
+  // fenced code
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const id = blocks.length;
+    blocks.push(
+      '<div class="codeblock"><div class="codebar"><span class="lang">' +
+      esc(lang || 'text') + '</span>' +
+      '<button class="copy" data-code="' + esc(code) + '">Copy</button></div>' +
+      '<pre>' + highlight(code.replace(/\n$/, ''), lang) + '</pre></div>');
+    return '@@CB' + id + '@@';
+  });
+
+  s = esc(s);
+
+  // tables
+  s = s.replace(/(?:^\|.*\|\s*\n)+/gm, block => {
+    const rows = block.trim().split('\n').map(r =>
+      r.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+    if (rows.length < 2 || !/^[-: ]+$/.test(rows[1].join(''))) return block;
+    let h = '<table><thead><tr>' + rows[0].map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+    rows.slice(2).forEach(r => { h += '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>'; });
+    return h + '</tbody></table>';
+  });
+
+  s = s.replace(/^###\s+(.*)$/gm, '<h3>$1</h3>')
+       .replace(/^##\s+(.*)$/gm, '<h2>$1</h2>')
+       .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
+       .replace(/^\s*(?:---|\*\*\*)\s*$/gm, '<hr>')
+       .replace(/^&gt;\s?(.*)$/gm, '<blockquote>$1</blockquote>');
+
+  s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>')
+       .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+       .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+       .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // lists
+  s = s.replace(/(?:^[ \t]*[-*+]\s+.*(?:\n|$))+/gm, m =>
+    '<ul>' + m.trim().split('\n').map(l =>
+      '<li>' + l.replace(/^[ \t]*[-*+]\s+/, '') + '</li>').join('') + '</ul>');
+  s = s.replace(/(?:^[ \t]*\d+\.\s+.*(?:\n|$))+/gm, m =>
+    '<ol>' + m.trim().split('\n').map(l =>
+      '<li>' + l.replace(/^[ \t]*\d+\.\s+/, '') + '</li>').join('') + '</ol>');
+
+  // paragraphs
+  s = s.split(/\n{2,}/).map(p => {
+    p = p.trim();
+    if (!p) return '';
+    if (/^<(h[123]|ul|ol|blockquote|hr|table|div)/.test(p) || /^@@CB\d+@@$/.test(p)) return p;
+    return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+  }).join('\n');
+
+  return s.replace(/@@CB(\d+)@@/g, (_, i) => blocks[+i]);
+}
+
+/* ================================= status ================================ */
+function pill(role, b) {
   if (!b) return '';
   const cls = b.ready ? 'ok' : (role === 'fallback' ? 'warn' : 'bad');
-  const where = b.local ? 'on this machine' : 'over the internet';
-  const why = b.problem ? '<span class="why">' + b.problem + '</span>' : '';
-  return '<div class="brain"><span class="dot ' + cls + '"></span>' +
-         '<span class="tag">' + role + '</span>' +
-         '<span>' + b.name + ' \\u00b7 ' + b.model + ' \\u00b7 ' + where + '</span>' + why + '</div>';
+  const title = b.problem ? ' title="' + esc(b.problem) + '"' : '';
+  return '<div class="pill"' + title + '><span class="dot ' + cls + '"></span>' +
+         '<span>' + esc(role) + '</span><b>' + esc(b.name) + '</b>' +
+         '<span>' + esc(b.model || '') + '</span></div>';
 }
 
 async function refreshStatus() {
   try {
     const s = await (await fetch('/status')).json();
-    let html = brainRow('primary', s.primary) + brainRow('fallback', s.fallback);
-    const anyReady = (s.primary && s.primary.ready) || (s.fallback && s.fallback.ready);
-    if (!anyReady) {
-      html += '<div class="brain"><span class="dot bad"></span>' +
-              '<span>No working brain \\u2014 edit ugos_config.py to pick one.</span></div>';
-    }
-    $('status').innerHTML = html;
+    $('pills').innerHTML = pill('primary', s.primary) + pill('fallback', s.fallback);
   } catch (e) {
-    $('status').innerHTML = '<div class="brain"><span class="dot bad"></span>Cannot reach UGOS.</div>';
+    $('pills').innerHTML = '<div class="pill"><span class="dot bad"></span>offline</div>';
   }
 }
 
-async function run() {
-  const prompt = $('prompt').value.trim();
-  if (!prompt) return;
+/* ================================= thread ================================ */
+let busy = false;
 
-  $('go').disabled = true; $('go').textContent = 'Working...';
-  $('out').className = 'out show';
-  $('banner').innerHTML = ''; $('meta').textContent = ''; $('steps').innerHTML = '';
-  $('answer').textContent = 'Thinking. A local model takes longer on the first request while it loads.';
+function scrollDown() { $('main').scrollTop = $('main').scrollHeight; }
+
+function stepsHtml(steps) {
+  if (!steps || !steps.length) return '';
+  const blocked = steps.filter(s => !s.allowed).length;
+  const label = steps.length + (steps.length === 1 ? ' action' : ' actions') +
+                (blocked ? ' · ' + blocked + ' blocked' : '');
+  let h = '<div class="steps"><div class="steps-head"><span class="caret">▾</span>' + label + '</div><div class="step-list">';
+  steps.forEach((s, i) => {
+    const args = Object.values(s.args || {}).map(v => JSON.stringify(v)).join(', ');
+    h += '<div class="step" style="animation-delay:' + (i * 90) + 'ms">' +
+         '<div class="step-head">' +
+         '<span class="badge ' + (s.allowed ? 'ok">ALLOWED' : 'no">BLOCKED') + '</span>' +
+         '<span class="call"><em>' + esc(s.tool) + '</em>(' + esc(args) + ')</span></div>' +
+         '<div class="step-out">' + esc((s.output || '').slice(0, 400)) + '</div></div>';
+  });
+  return h + '</div></div>';
+}
+
+async function ask(text) {
+  if (busy || !text.trim()) return;
+  busy = true; $('go').disabled = true;
+  const empty = $('empty'); if (empty) empty.remove();
+
+  const turn = document.createElement('div');
+  turn.className = 'turn';
+  turn.innerHTML =
+    '<div class="you"><div class="bubble">' + esc(text) + '</div></div>' +
+    '<div class="reply"><div class="avatar">U</div><div class="body">' +
+    '<div class="thinking"><span class="orbs"><i></i><i></i><i></i></span>' +
+    '<span>Working through it</span></div></div></div>';
+  $('thread').appendChild(turn);
+  scrollDown();
+
+  const body = turn.querySelector('.body');
+  const started = Date.now();
 
   try {
     const r = await fetch('/ask', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({prompt})
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({prompt: text})
     });
     const d = await r.json();
-    $('answer').textContent = d.answer || '(no answer)';
 
-    if (d.steps && d.steps.length) {
-      let h = '<div class="stepsTitle">What it did</div><div class="steps">';
-      for (const s of d.steps) {
-        const badge = s.allowed
-          ? '<span class="badge ok">ALLOWED</span>'
-          : '<span class="badge no">BLOCKED</span>';
-        const call = s.tool + '(' + Object.values(s.args || {}).map(v => JSON.stringify(v)).join(', ') + ')';
-        h += '<div class="step"><div class="head">' + badge +
-             '<span class="call">' + esc(call) + '</span></div>' +
-             '<div class="res">' + esc((s.output || '').split('\\n').slice(0,3).join('\\n')) + '</div></div>';
-      }
-      $('steps').innerHTML = h + '</div>';
-    }
-
-    if (d.blocked) {
-      $('banner').className = 'banner bad';
-      $('banner').textContent = 'Blocked by the security policy before anything ran.';
-    } else if (!d.real) {
-      $('banner').className = 'banner warn';
-      let why = 'This came from a placeholder, not a real model. Not saved to memory.';
+    let note = '';
+    if (d.blocked) note = '<div class="note bad">Blocked by the security policy before anything ran.</div>';
+    else if (!d.real) {
+      note = '<div class="note warn">Answered by a placeholder, not a real model. Not saved to memory.';
       if (d.errors && d.errors.length) {
-        why += '<br><br>Why:';
-        for (const e of d.errors) {
-          if ((e.provider || '').toLowerCase().includes('mock')) continue;
-          why += '<br>\u00b7 <b>' + esc(e.provider) + '</b>: ' + esc(e.error);
-        }
+        d.errors.filter(e => !/mock/i.test(e.provider || '')).forEach(e => {
+          note += '<br><br><b>' + esc(e.provider) + ':</b> ' + esc(e.error);
+        });
       }
-      $('banner').innerHTML = why;
-    } else {
-      $('banner').className = ''; $('banner').textContent = '';
+      note += '</div>';
     }
 
-    const bits = [];
-    if (d.provider) bits.push('Answered by: ' + d.provider);
-    if (d.model) bits.push(d.model);
-    if (d.seconds) bits.push(d.seconds + 's');
-    bits.push(d.saved ? 'Saved to memory' : 'Not saved');
-    $('meta').textContent = bits.join('   \\u00b7   ');
+    const meta = ['<span>' + esc(d.provider || '—') + '</span>'];
+    if (d.model) meta.push('<i>·</i><span>' + esc(d.model) + '</span>');
+    meta.push('<i>·</i><span>' + (d.seconds || ((Date.now() - started) / 1000).toFixed(1)) + 's</span>');
+    meta.push('<i>·</i><span>' + (d.saved ? 'saved to memory' : 'not saved') + '</span>');
+
+    body.innerHTML = stepsHtml(d.steps) + note +
+                     '<div class="md">' + md(d.answer || '_(no answer)_') + '</div>' +
+                     '<div class="meta">' + meta.join('') + '</div>';
   } catch (e) {
-    $('banner').className = 'banner bad';
-    $('banner').textContent = 'Request failed: ' + e.message;
-    $('answer').textContent = '';
+    body.innerHTML = '<div class="note bad">Request failed: ' + esc(e.message) + '</div>';
   } finally {
-    $('go').disabled = false; $('go').textContent = 'Run';
-    refreshStatus();
+    busy = false; $('go').disabled = false;
+    scrollDown(); refreshStatus(); $('prompt').focus();
   }
 }
 
-$('go').onclick = run;
-$('prompt').addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') run(); });
+/* ================================ wiring ================================= */
+const ta = $('prompt');
+ta.addEventListener('input', () => {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+});
+ta.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const t = ta.value; ta.value = ''; ta.style.height = 'auto'; ask(t);
+  }
+});
+$('go').onclick = () => { const t = ta.value; ta.value = ''; ta.style.height = 'auto'; ask(t); };
+
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (chip) { ask(chip.dataset.q); return; }
+
+  const head = e.target.closest('.steps-head');
+  if (head) { head.parentElement.classList.toggle('closed'); return; }
+
+  const copy = e.target.closest('.copy');
+  if (copy) {
+    navigator.clipboard.writeText(copy.dataset.code).then(() => {
+      copy.textContent = 'Copied'; copy.classList.add('done');
+      setTimeout(() => { copy.textContent = 'Copy'; copy.classList.remove('done'); }, 1600);
+    });
+  }
+});
+
 refreshStatus();
+setInterval(refreshStatus, 30000);
+ta.focus();
 </script>
 </body>
 </html>
@@ -243,7 +512,7 @@ class UGOS:
             return {
                 "blocked": True, "real": False, "saved": False, "steps": [],
                 "answer": verdict.get("reason", "Denied by security policy."),
-                "provider": None, "model": None, "seconds": 0,
+                "provider": None, "model": None, "seconds": 0, "errors": [],
             }
 
         # Inner gates: every tool the model asks for is checked individually.
