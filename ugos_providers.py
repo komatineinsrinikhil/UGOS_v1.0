@@ -22,6 +22,7 @@ import json
 import logging
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -35,6 +36,32 @@ for _p in (str(BASE_DIR), str(BASE_DIR / "src")):
 from ugos.llm.router import BaseLLMProvider, LLMRouter, MockLLMProvider
 
 import ugos_config as cfg
+
+
+# ===========================================================================
+# HTTP
+# ===========================================================================
+
+def _urlopen(req, timeout: int, retries: int = 1):
+    """
+    urlopen that retries once on 429.
+
+    Free tiers rate limit per minute, and the agent loop makes several calls
+    per question, so a single 429 is usually a brief wait rather than a real
+    failure. Honours Retry-After when the service sends it.
+    """
+    for attempt in range(retries + 1):
+        try:
+            return urllib.request.urlopen(req, timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 429 or attempt >= retries:
+                raise
+            try:
+                wait = float(exc.headers.get("Retry-After", 2))
+            except (TypeError, ValueError):
+                wait = 2.0
+            logging.warning(f"Rate limited (429). Waiting {min(wait, 30):.0f}s and retrying once.")
+            time.sleep(min(wait, 30))
 
 
 # ===========================================================================
@@ -207,7 +234,7 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             headers=headers,
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with _urlopen(req, self.timeout) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:250]
@@ -215,7 +242,9 @@ class OpenAICompatibleProvider(BaseLLMProvider):
             if exc.code in (401, 403):
                 hint = " -- the API key looks wrong or expired."
             elif exc.code == 429:
-                hint = " -- rate limit or free quota reached. Try again later."
+                hint = (" -- rate limit still hit after a retry. Free tiers count per minute; "
+                        "wait a moment, or switch PRIMARY in ugos_config.py to a service with "
+                        "a higher free limit such as groq.")
             elif exc.code == 404:
                 hint = f" -- the model '{self.model_id}' may not exist on this service."
             raise RuntimeError(f"{self.provider_name} returned {exc.code}{hint} {detail}") from exc
@@ -274,7 +303,7 @@ class GeminiProvider(BaseLLMProvider):
             headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key},
         )
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with _urlopen(req, self.timeout) as resp:
                 payload = json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:250]
@@ -282,7 +311,8 @@ class GeminiProvider(BaseLLMProvider):
             if exc.code in (400, 401, 403):
                 hint = " -- the API key looks wrong, or the Gemini API is not enabled for it."
             elif exc.code == 429:
-                hint = " -- free quota reached for now."
+                hint = (" -- rate limit still hit after a retry. Gemini's free tier counts per "
+                        "minute; wait a moment, or try groq, which allows more.")
             elif exc.code == 404:
                 hint = f" -- model '{self.model_id}' not found. Check MODELS in ugos_config.py."
             raise RuntimeError(f"Gemini returned {exc.code}{hint} {detail}") from exc

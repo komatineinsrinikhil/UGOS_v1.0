@@ -1,0 +1,27 @@
+name: tests
+
+# UGOS_900 BR-900-01: a change to the policy engine must ship with a test.
+# Nothing enforced that until this workflow existed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        # UGOS itself needs nothing; pytest is the only test-time dependency.
+        run: pip install pytest
+
+      - name: Run the suite
+        # No network access is required -- UGOS_900 BR-900-06.
+        run: python -m pytest tests/test_core.py -v

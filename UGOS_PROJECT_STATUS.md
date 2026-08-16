@@ -3,7 +3,7 @@
 Last Updated: 2026-08-14
 
 Specification: 56 spec files (53 original + UGOS_600, UGOS_800, UGOS_900).
-Reference implementation: working, 11/11 tests passing.
+Reference implementation: working, 18/18 tests passing, CI on every push.
 
 This file is the single source of truth for project state. Both the human and
 any AI assistant working on UGOS should read it before starting, and update it
@@ -80,6 +80,15 @@ Working and tested:
 - **Three reserved modules drafted**: `UGOS_600` tool architecture (from the
   v0.1 Tool Integration Framework), `UGOS_800` evaluation framework (new), and
   `UGOS_900` testing standard.
+- **Rate-limit resilience.** The agent loop made up to 7 model calls per
+  question, which exhausted Gemini's free tier during deployment. MAX_STEPS is
+  now 3 (worst case 4 calls, typical 2), and a 429 retries once honouring
+  Retry-After. Verified against a server that rate-limits the first call.
+- **Security is now provable.** Seven new tests: L3 actions in both directions,
+  the elevation gate for L4 and L5, sandbox traversal, the .env pattern,
+  fail-closed, and the legacy aliases. Each asserts the *reason*, not just
+  False. 11 tests became 18.
+- **CI added.** `.github/workflows/tests.yml` runs the suite on every push.
 - **Spec markdown repaired across all 52 files.** 7,466 backslash escapes and
   1,105 `&#x20;` entities removed, 39 unterminated code fences closed. Verified
   by word-level diff: content identical, formatting only.
@@ -96,9 +105,8 @@ Working and tested:
   them, so L3 is enforceable but unexercised.
 - **`UGOS_800` specifies a probe harness that does not exist.** The security
   probes are verified by hand today. Stated plainly in the document.
-- **Test coverage lags the code.** No committed tests for the L3 actions, the
-  elevation gate, fail-closed behaviour, `ugos_agent.py` or `ugos_providers.py`.
-  Listed as deviations in `UGOS_900`.
+- **`ugos_agent.py` and `ugos_providers.py` still have no committed tests.**
+  The policy engine is now covered at 18 tests; these two are not.
 - **Run-together paragraphs remain in 22 spec files.** The escape damage was
   repaired, but the original paste also destroyed newlines inside some
   paragraphs, gluing sentences together. Numbered headings were restored

@@ -37,7 +37,7 @@ for _p in (str(BASE_DIR), str(BASE_DIR / "src")):
 from ugos.core.tools import ToolEngine
 from ugos.security.policy import PolicyEngine, PermissionLevel, SecurityAction
 
-MAX_STEPS = 6
+MAX_STEPS = 3        # each step is a model call; free tiers count per minute
 MAX_FILE_CHARS = 6000
 MAX_DIR_ENTRIES = 120
 
@@ -226,6 +226,8 @@ To give your final answer:
 RULES:
 - If you can answer without a tool, answer immediately. Do not use tools for
   general knowledge questions.
+- Be economical. Every tool use costs a round trip; prefer one good one to
+  three cautious ones.
 - Request one tool at a time. You will be shown the result and can then
   request another or answer.
 - A tool may be REFUSED by the security policy. That is normal and expected.
@@ -328,9 +330,15 @@ def run_agent(
         })
 
         verdict = "RESULT" if outcome["allowed"] else "REFUSED BY SECURITY POLICY"
+        remaining = max_steps - step_no
         transcript += (
             f"\nYou requested: {name}({json.dumps(args)})\n"
             f"{verdict}:\n{outcome['output'][:MAX_FILE_CHARS]}\n"
+        )
+        transcript += (
+            "\nYou have no tool uses left. Give your final answer now.\n"
+            if remaining <= 0 else
+            f"\n({remaining} tool use{'s' if remaining != 1 else ''} left.)\n"
         )
 
     transcript += "\nYou have used all your tool steps. Give your final answer now as {\"answer\": \"...\"}.\n"

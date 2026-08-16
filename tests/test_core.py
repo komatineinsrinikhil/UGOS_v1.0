@@ -256,3 +256,80 @@ def test_execution_engine_sandbox_fallback():
     docker_engine = ExecutionEngine(use_docker=True)
     res_docker = docker_engine.execute_task(task)
     assert res_docker["status"] in ["SUCCESS", "FAILED"]
+
+
+# ---------------------------------------------------------------------------
+# 12-17. Privilege ladder, elevation gate, fail-closed  (UGOS_900 BR-900-02:
+# security tests assert the REASON, not only the boolean -- passing for the
+# wrong reason hides the next bug)
+# ---------------------------------------------------------------------------
+
+def test_l3_actions_gated_above_l2():
+    """L3 must grant delegation, API routing and DB queries; L2 must not."""
+    policy = PolicyEngine()
+    for action in (SecurityAction.DELEGATE_TASK,
+                   SecurityAction.ROUTE_API,
+                   SecurityAction.QUERY_DATABASE):
+        assert policy.authorize_action("ag_l3", PermissionLevel.L3_INTEGRATOR, action) is True
+        assert policy.authorize_action("ag_l2", PermissionLevel.L2_SANDBOXED, action) is False
+        assert "cannot perform action" in policy.last_decision()["reason"]
+
+
+def test_elevation_gate_denies_l4_without_approval():
+    """UGOS_402 s.3: L4/L5 require explicit approval; the default is deny."""
+    policy = PolicyEngine()
+
+    assert policy.authorize_action(
+        "ag_admin", PermissionLevel.L4_GUARDED, SecurityAction.MODIFY_SYSTEM, "config"
+    ) is False
+    assert "elevation approval" in policy.last_decision()["reason"]
+
+    assert policy.authorize_action(
+        "ag_admin", PermissionLevel.L4_GUARDED, SecurityAction.MODIFY_SYSTEM, "config",
+        elevation_approved=True
+    ) is True
+
+
+def test_elevation_gate_applies_to_l5():
+    policy = PolicyEngine()
+    assert policy.authorize_action(
+        "ag_root", PermissionLevel.L5_ROOT, SecurityAction.MODIFY_SYSTEM
+    ) is False
+    assert policy.authorize_action(
+        "ag_root", PermissionLevel.L5_ROOT, SecurityAction.MODIFY_SYSTEM,
+        elevation_approved=True
+    ) is True
+
+
+def test_sandbox_boundary_blocks_traversal():
+    """A resolved target outside the sandbox is refused, with that reason."""
+    policy = PolicyEngine()
+    assert policy.authorize_action(
+        "ag_esc", PermissionLevel.L1_STANDARD, SecurityAction.READ_FILE,
+        "../../../etc/passwd"
+    ) is False
+    assert "outside the permitted sandbox" in policy.last_decision()["reason"]
+
+
+def test_forbidden_pattern_reason_is_specific():
+    """Reading .env must fail because of the pattern, not because it is absent."""
+    policy = PolicyEngine()
+    assert policy.authorize_action(
+        "ag_sneak", PermissionLevel.L1_STANDARD, SecurityAction.READ_FILE, ".env"
+    ) is False
+    assert "forbidden pattern" in policy.last_decision()["reason"]
+
+
+def test_policy_fails_closed_on_malformed_target():
+    """UGOS_400: an error during evaluation denies rather than leaking."""
+    policy = PolicyEngine()
+    assert policy.authorize_action(
+        "ag_fuzz", PermissionLevel.L1_STANDARD, SecurityAction.READ_FILE, "\x00bad"
+    ) is False
+
+
+def test_legacy_permission_names_still_resolve():
+    """Old call sites must keep working after the L0-L5 rename."""
+    assert PermissionLevel.STANDARD_EXEC is PermissionLevel.L1_STANDARD
+    assert PermissionLevel("ELEVATED") is PermissionLevel.L2_SANDBOXED
+    assert PermissionLevel.L3_INTEGRATOR.rank == 3

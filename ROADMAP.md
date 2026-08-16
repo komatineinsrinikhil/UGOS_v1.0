@@ -39,9 +39,9 @@ the project that would survive scrutiny.
 workflows; the code has two agents and no workflows. The README says so, which
 is the right call, but it remains the largest gap between document and reality.
 
-**Test coverage lags the code.** 11 tests pass, but nothing covers the L3
-actions, the elevation gate, fail-closed behaviour, `ugos_agent.py` or
-`ugos_providers.py` — all added today and verified by hand.
+**Test coverage now matches the security core.** 18 tests, and every deny path
+asserts its reason rather than just a boolean. `ugos_agent.py` and
+`ugos_providers.py` remain uncovered.
 
 **Nothing is deployed.** The public demo works locally and is committed but has
 no URL.
@@ -50,16 +50,21 @@ no URL.
 
 | # | Issue | Impact |
 |---|---|---|
-| 1 | Agent loop makes up to 7 model calls per question | Burns free-tier rate limits in minutes |
-| 2 | No retry or backoff on a 429 | One rate-limit error kills the whole run |
+| ~~1~~ | ~~Agent loop makes up to 7 model calls per question~~ | Fixed: capped at 4, typical question is 2 |
+| ~~2~~ | ~~No retry or backoff on a 429~~ | Fixed: retries once, honours Retry-After |
 | 3 | `list_dir` and `system_status` bypass the `ToolEngine` registry | Two code paths for tools instead of one |
-| 4 | No CI | Nothing enforces "tests pass before commit" |
+| ~~4~~ | ~~No CI~~ | Fixed: GitHub Actions runs 18 tests per push |
 | 5 | 22 spec files have run-together paragraphs | Readable but ugly; needs a human pass |
 | 6 | `schemas/v1` empty; `extract_schemas.py` never run | Spec claims schemas that do not exist |
 
 ---
 
 # Part 2 — Do these first (hours, not days)
+
+> **Status: all four done, 2026-08-14.** Worst-case model calls cut from 7 to 4;
+> 429 retry verified against a rate-limiting server; suite grown from 11 tests
+> to 18; CI running on every push. Left here as the record of what was changed
+> and why.
 
 ## 2.1 Cut the model calls per question
 
@@ -249,9 +254,8 @@ versions.
 
 | When | Do | Why |
 |---|---|---|
-| Next session | 2.1, 2.2 | Makes the demo actually work |
-| Same session | Deploy to Render | The URL is what makes it shareable |
-| Then | 2.3, 2.4 | Security becomes provable |
+| ~~Done~~ | ~~2.1, 2.2, 2.3, 2.4~~ | Rate limits fixed, security provable, CI green |
+| **Next** | **Deploy to Render** | The URL is what makes it shareable |
 | Then | 3.1 write access | The biggest capability jump |
 | Then | 4.2 policy files | Turns it into infrastructure |
 | Then | 3.3 evaluation | Evidence for the security claim |
