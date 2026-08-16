@@ -105,9 +105,23 @@ model decides it needs something
 ```
 
 A refusal is fed back as an observation, so the model reports the block rather
-than failing silently or retrying. Read-only tools: `read_file`, `list_dir`,
-`system_status`. The loop caps steps, detects repeated requests, and tolerates
-models that wrap replies in prose or code fences.
+than failing silently or retrying. Tools: `read_file`, `list_dir`,
+`system_status`, and `write_file`. The loop caps steps at 3, detects repeated
+requests, and tolerates models that wrap replies in prose or code fences.
+
+### Writes require consent
+
+Authorisation and approval are different questions. An agent may hold
+`WRITE_FILE` and still be unable to change anything on its own: the tool
+returns a unified diff, the interface shows Approve and Discard, and nothing
+touches the disk until a human clicks.
+
+That pause is decided by `PolicyEngine.needs_approval()`, not by the web page —
+so a different front end cannot skip it. Writes are also confined to a
+`workspace/` folder, narrower than the sandbox used for reads, because an agent
+able to write to `src/ugos/security/policy.py` could rewrite its own rules.
+
+Writing is disabled entirely in public demo mode.
 
 ### Provider routing
 
@@ -167,9 +181,11 @@ UGOS_v1.0_SPECIFICATION/
 python -m pytest tests/test_core.py -v
 ```
 
-11 tests covering the execution engine, DAG orchestration, permission
+23 tests covering the execution engine, DAG orchestration, permission
 enforcement, agent security integration, the tool engine, both memory tiers,
-diff generation, and router failover.
+diff generation, router failover, the L3 actions, the elevation gate,
+fail-closed evaluation, and the write-approval flow. Every security test
+asserts the *reason* for a refusal, not just that it was refused.
 
 ---
 
@@ -177,7 +193,7 @@ diff generation, and router failover.
 
 **Working:** security policy with sandbox enforcement, SQLite memory, tool
 engine, DAG orchestration, provider routing across eight backends, the read-only
-agent loop, web and CLI interfaces. 11/11 tests passing.
+agent loop, write-with-approval, web and CLI interfaces. 23/23 tests passing.
 
 **Specified but not built:** the specification describes eight specialised
 agents (research, software engineering, cybersecurity, data analysis, project
@@ -192,8 +208,8 @@ design, not code.
   gated, but no tool implements them yet.
 - `UGOS_800` (evaluation) specifies a probe harness that is not yet built.
 - `schemas/v1` is still an empty placeholder.
-- Agent tools are read-only. Write access needs the sandbox roots tightened and a
-  confirmation step first.
+- No tool implements the L3 actions (`DELEGATE_TASK`, `ROUTE_API`,
+  `QUERY_DATABASE`) yet — the level is enforced but unexercised.
 
 ---
 

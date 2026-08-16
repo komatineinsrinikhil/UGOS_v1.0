@@ -1,27 +1,3 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-*.egg-info/
-.venv/
-env/
 
-# SQLite Database Files
-*.db
-*.db-journal
-
-# Python Bytecode & Caches
-__pycache__/
-*.pyc
-.pytest_cache/
-
-# System / IDE Files
-.vscode/
-.idea/
-# Local backup of the pre-fix script (git history already has it)
-run_my_task_ORIGINAL.py
-_to_delete/
-
-# API keys -- never commit these
-.env
+# Agent write workspace -- proposed changes land here after approval
+workspace/

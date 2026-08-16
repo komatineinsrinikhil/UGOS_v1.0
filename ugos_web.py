@@ -34,7 +34,7 @@ from ugos.agents.specialized import SoftwareEngineerAgent
 
 import ugos_config as cfg
 from ugos_providers import build_router, build_router_for, describe_setup, public_services
-from ugos_agent import run_agent, ReadOnlyToolbox
+from ugos_agent import run_agent, Toolbox
 
 # ---------------------------------------------------------------------------
 # PUBLIC DEMO MODE
@@ -264,6 +264,28 @@ PAGE = r"""<!DOCTYPE html>
 
   .note { padding:11px 14px; border-radius:9px; font-size:13px; margin-bottom:14px; }
   .note.bad { background:rgba(248,81,73,.1); color:#ff9a94; border:1px solid rgba(248,81,73,.2); }
+  .propose {
+    border:1px solid var(--warn); border-radius:11px; margin-bottom:16px;
+    overflow:hidden; background:rgba(210,153,34,.04);
+  }
+  .propose-head {
+    display:flex; align-items:center; gap:9px; padding:10px 14px;
+    background:rgba(210,153,34,.1); font-size:13px; color:#e3b341;
+  }
+  .propose-head b { color:var(--text); font-weight:600; }
+  .diff { margin:0; padding:12px 14px; overflow-x:auto;
+    font:12.5px/1.6 "Cascadia Mono",Consolas,monospace; }
+  .diff .add { color:#56d364; background:rgba(63,185,80,.08); display:block; }
+  .diff .del { color:#ff8f88; background:rgba(248,81,73,.08); display:block; }
+  .diff .hunk { color:var(--accent); display:block; }
+  .diff .ctx { color:var(--muted); display:block; }
+  .propose-act { display:flex; gap:10px; padding:12px 14px; border-top:1px solid var(--line); }
+  .propose-act button {
+    padding:9px 18px; border-radius:8px; font:600 13px inherit; cursor:pointer;
+    border:1px solid var(--line); background:var(--panel-2); color:var(--text);
+  }
+  .propose-act button.ok { background:var(--ok); border-color:var(--ok); color:#04140a; }
+  .propose-act .done { color:var(--muted); font-size:13px; align-self:center; }
   .note.warn { background:rgba(210,153,34,.1); color:#e3b341; border:1px solid rgba(210,153,34,.2); }
 
   .meta {
@@ -445,6 +467,16 @@ function pill(role, b) {
          '<span>' + esc(b.model || '') + '</span></div>';
 }
 
+function renderDiff(text) {
+  return String(text).split('\n').map(l => {
+    const cls = l.startsWith('+++') || l.startsWith('---') ? 'ctx'
+              : l.startsWith('@@') ? 'hunk'
+              : l.startsWith('+') ? 'add'
+              : l.startsWith('-') ? 'del' : 'ctx';
+    return '<span class="' + cls + '">' + esc(l || ' ') + '</span>';
+  }).join('');
+}
+
 let CFG = {public:false, services:[]};
 const KEY_STORE = 'ugos_key', SVC_STORE = 'ugos_service';
 const getKey = () => sessionStorage.getItem(KEY_STORE) || '';
@@ -571,6 +603,19 @@ async function ask(text) {
     body.innerHTML = stepsHtml(d.steps) + note +
                      '<div class="md">' + md(d.answer || '_(no answer)_') + '</div>' +
                      '<div class="meta">' + meta.join('') + '</div>';
+
+    for (const p of (d.steps || []).filter(s => s.pending)) {
+      const el = document.createElement('div');
+      el.className = 'propose';
+      el.innerHTML =
+        '<div class="propose-head">\u26a0 <b>' + esc(p.args.path || 'file') +
+        '</b> &mdash; proposed, not yet written</div>' +
+        '<pre class="diff">' + renderDiff(p.diff || '') + '</pre>' +
+        '<div class="propose-act" data-id="' + esc(p.pending) + '">' +
+        '<button class="ok approve">Approve and write</button>' +
+        '<button class="reject">Discard</button></div>';
+      body.insertBefore(el, body.querySelector('.md'));
+    }
   } catch (e) {
     body.innerHTML = '<div class="note bad">Request failed: ' + esc(e.message) + '</div>';
   } finally {
@@ -599,6 +644,25 @@ document.addEventListener('click', e => {
 
   const head = e.target.closest('.steps-head');
   if (head) { head.parentElement.classList.toggle('closed'); return; }
+
+  const act = e.target.closest('.propose-act button');
+  if (act) {
+    const row = act.parentElement, id = row.dataset.id;
+    const approving = act.classList.contains('approve');
+    row.innerHTML = '<span class="done">Working...</span>';
+    fetch(approving ? '/approve' : '/reject', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id})
+    }).then(r => r.json()).then(res => {
+      row.innerHTML = '<span class="done">' + (
+        !res.ok ? ('Failed: ' + esc(res.error || 'unknown')) :
+        approving ? ('\u2713 Written to ' + esc(res.name) + ' (' + res.bytes + ' bytes)')
+                  : '\u2715 Discarded. Nothing was written.'
+      ) + '</span>';
+      row.parentElement.style.borderColor = res.ok && approving ? 'var(--ok)' : 'var(--line)';
+    });
+    return;
+  }
 
   const copy = e.target.closest('.copy');
   if (copy) {
@@ -641,7 +705,9 @@ class UGOS:
         self.session = self.memory.get_or_create_session(SESSION_ID)
         self.agent = SoftwareEngineerAgent(name="WebBot")
         self.router = None if PUBLIC else build_router()
-        self.toolbox = ReadOnlyToolbox(sandbox_root=BASE_DIR)
+        # Writes are enabled locally and OFF in the public demo -- strangers
+        # do not get to propose changes to the server's disk.
+        self.toolbox = Toolbox(sandbox_root=BASE_DIR, allow_write=not PUBLIC)
         self.hits = defaultdict(list)
 
     def rate_ok(self, ip: str) -> bool:
@@ -736,6 +802,22 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, "Not found", "text/plain")
 
     def do_POST(self):
+        if self.path in ("/approve", "/reject"):
+            if PUBLIC:
+                self._send(403, json.dumps({"error": "Writing is disabled in the public demo."}),
+                           "application/json")
+                return
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                data = json.loads(self.rfile.read(length) or b"{}")
+                change_id = str(data.get("id", ""))
+                box = self.ugos.toolbox
+                result = box.approve(change_id) if self.path == "/approve" else box.reject(change_id)
+                self._send(200, json.dumps(result), "application/json")
+            except Exception as exc:
+                self._send(500, json.dumps({"ok": False, "error": str(exc)}), "application/json")
+            return
+
         if self.path != "/ask":
             self._send(404, "Not found", "text/plain")
             return

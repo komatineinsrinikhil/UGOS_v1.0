@@ -16,9 +16,15 @@ never touches a file directly: it can only ask, and the policy decides. A
 refusal is fed back as an observation, so the model learns it may not have
 that file rather than silently failing.
 
-Tools are READ-ONLY by design. Nothing here can modify your disk.
+Reads are always available. Writes are opt-in (allow_write=True), confined to a
+workspace folder rather than the whole project, and never take effect on their
+own: the tool returns a diff and waits for a human to approve it.
+
+That pause is a policy decision, not an interface one -- PolicyEngine.
+needs_approval() decides, so a different front end cannot skip it.
 """
 
+import difflib
 import json
 import os
 import platform
@@ -40,26 +46,47 @@ from ugos.security.policy import PolicyEngine, PermissionLevel, SecurityAction
 MAX_STEPS = 3        # each step is a model call; free tiers count per minute
 MAX_FILE_CHARS = 6000
 MAX_DIR_ENTRIES = 120
+MAX_WRITE_CHARS = 20000
 
 
 # ===========================================================================
 # Tools
 # ===========================================================================
 
-class ReadOnlyToolbox:
+class Toolbox:
     """
-    The three things the model is allowed to ask for.
+    What the model is allowed to ask for.
 
-    Every one goes through PolicyEngine.authorize_action() before it runs.
-    read_file delegates to the project's existing ToolEngine so there is one
-    code path for file access, not two.
+    Every request goes through PolicyEngine.authorize_action() before it runs,
+    and file access delegates to the project's existing ToolEngine so there is
+    one code path, not two.
+
+    Writes, when enabled, are confined to `write_root` -- a workspace folder
+    inside the sandbox, never the project itself. An agent that could write to
+    src/ugos/security/policy.py could rewrite its own rules.
     """
 
-    def __init__(self, sandbox_root: Path = None, permission_level=PermissionLevel.READ_ONLY):
+    def __init__(
+        self,
+        sandbox_root: Path = None,
+        permission_level=PermissionLevel.READ_ONLY,
+        allow_write: bool = False,
+        write_root: Path = None,
+    ):
         self.root = Path(sandbox_root or BASE_DIR).resolve()
+        self.allow_write = allow_write
+        self.write_root = Path(write_root or (self.root / "workspace")).resolve()
+
+        if allow_write:
+            # Writing needs L1; reading alone is L0.
+            if permission_level.rank < PermissionLevel.L1_STANDARD.rank:
+                permission_level = PermissionLevel.L1_STANDARD
+            self.write_root.mkdir(parents=True, exist_ok=True)
+
         self.permission_level = permission_level
         self.policy = PolicyEngine(default_profile="STRICT", sandbox_roots=[self.root])
         self.tools = ToolEngine(security_policy=self.policy)
+        self.pending: Dict[str, Dict[str, Any]] = {}
 
     # -- descriptions handed to the model ---------------------------------
 
@@ -81,9 +108,21 @@ class ReadOnlyToolbox:
         },
     ]
 
+    WRITE_SPEC = {
+        "name": "write_file",
+        "args": {"path": "file to write, inside the workspace folder",
+                 "content": "the complete new contents of the file"},
+        "description": ("Create or replace a file in the workspace. The change is "
+                        "NOT applied immediately -- the user is shown a diff and "
+                        "must approve it."),
+    }
+
+    def specs(self) -> List[Dict[str, Any]]:
+        return self.SPECS + ([self.WRITE_SPEC] if self.allow_write else [])
+
     def catalogue(self) -> str:
         lines = []
-        for spec in self.SPECS:
+        for spec in self.specs():
             args = ", ".join(f'"{k}"' for k in spec["args"]) or "none"
             lines.append(f'- {spec["name"]}({args}) -- {spec["description"]}')
         return "\n".join(lines)
@@ -108,10 +147,19 @@ class ReadOnlyToolbox:
             return self._list_dir(str(args.get("path", ".")).strip() or ".", agent_id)
         if name == "system_status":
             return self._system_status(agent_id)
+        if name == "write_file":
+            if not self.allow_write:
+                return {"allowed": False,
+                        "output": "Writing is disabled in this session. This agent is read-only."}
+            return self._write_file(
+                str(args.get("path", "")).strip(),
+                str(args.get("content", "")),
+                agent_id,
+            )
         return {
             "allowed": False,
             "output": f"There is no tool called '{name}'. Available: "
-                      + ", ".join(s["name"] for s in self.SPECS),
+                      + ", ".join(s["name"] for s in self.specs()),
         }
 
     def _read_file(self, path: str, agent_id: str) -> Dict[str, Any]:
@@ -139,6 +187,91 @@ class ReadOnlyToolbox:
         if len(content) > MAX_FILE_CHARS:
             content = content[:MAX_FILE_CHARS] + f"\n... [truncated, file is {len(content)} characters]"
         return {"allowed": True, "output": content}
+
+    def _write_file(self, path: str, content: str, agent_id: str) -> Dict[str, Any]:
+        """
+        Proposes a write. Does not perform one.
+
+        The policy is asked twice: may this agent write at all, and does this
+        action need consent. If it does, the change is parked and a diff is
+        returned. Nothing touches the disk until approve() is called.
+        """
+        if not path:
+            return {"allowed": False, "output": "write_file needs a 'path'."}
+        if len(content) > MAX_WRITE_CHARS:
+            return {"allowed": False,
+                    "output": f"Refused: content exceeds {MAX_WRITE_CHARS} characters."}
+
+        candidate = Path(path)
+        target = candidate if candidate.is_absolute() else (self.write_root / candidate)
+        target = target.resolve()
+
+        # Writes are confined to the workspace, which is narrower than the
+        # sandbox used for reads. Checked here as well as in the policy,
+        # because the policy's sandbox is the wider one.
+        try:
+            target.relative_to(self.write_root)
+        except ValueError:
+            return {
+                "allowed": False,
+                "output": (f"REFUSED. Writes are confined to the workspace folder "
+                           f"({self.write_root.name}/). '{path}' is outside it."),
+            }
+
+        allowed = self.policy.authorize_action(
+            agent_id=agent_id,
+            permission_level=self.permission_level,
+            action=SecurityAction.WRITE_FILE,
+            target=str(target),
+        )
+        if not allowed:
+            decision = self.policy.last_decision() or {}
+            return {"allowed": False,
+                    "output": f"REFUSED by the security policy. {decision.get('reason', '')}".strip()}
+
+        old = target.read_text(encoding="utf-8") if target.exists() else ""
+        diff = "".join(difflib.unified_diff(
+            old.splitlines(keepends=True),
+            content.splitlines(keepends=True),
+            fromfile=f"a/{target.name}", tofile=f"b/{target.name}",
+        )) or "(no change)"
+
+        if not self.policy.needs_approval(SecurityAction.WRITE_FILE):
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+            return {"allowed": True, "output": f"Wrote {len(content)} characters to {target.name}."}
+
+        change_id = f"w{len(self.pending) + 1}"
+        self.pending[change_id] = {
+            "path": str(target), "content": content, "diff": diff,
+            "name": target.name, "existed": target.exists(),
+        }
+        return {
+            "allowed": True,
+            "pending": change_id,
+            "diff": diff,
+            "output": (f"PROPOSED a change to {target.name}. It has NOT been applied: "
+                       f"the user must approve it first.\n\n{diff[:1500]}"),
+        }
+
+    def approve(self, change_id: str) -> Dict[str, Any]:
+        """Commits a parked change. The only path that actually writes."""
+        change = self.pending.pop(change_id, None)
+        if not change:
+            return {"ok": False, "error": "No such pending change (it may already be resolved)."}
+        try:
+            target = Path(change["path"])
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(change["content"], encoding="utf-8")
+            return {"ok": True, "path": str(target), "name": change["name"],
+                    "bytes": len(change["content"])}
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def reject(self, change_id: str) -> Dict[str, Any]:
+        """Discards a parked change. Nothing was written, so nothing to undo."""
+        change = self.pending.pop(change_id, None)
+        return {"ok": bool(change), "name": (change or {}).get("name")}
 
     def _list_dir(self, path: str, agent_id: str) -> Dict[str, Any]:
         target = self._resolve(path)
@@ -233,7 +366,8 @@ RULES:
 - A tool may be REFUSED by the security policy. That is normal and expected.
   Do not retry a refused request. Tell the user plainly that the security
   policy blocked it and why.
-- You are read-only. You cannot create, modify or delete anything.
+- If a tool reports a change as PROPOSED, it has not happened yet. Say so
+  plainly; do not claim you have written anything.
 - After at most {max_steps} tool uses you must give a final answer."""
 
 
@@ -272,7 +406,7 @@ def _extract_json(text: str) -> Optional[Dict[str, Any]]:
 def run_agent(
     router,
     request: str,
-    toolbox: Optional[ReadOnlyToolbox] = None,
+    toolbox: Optional["Toolbox"] = None,
     max_steps: int = MAX_STEPS,
 ) -> Dict[str, Any]:
     """
@@ -327,6 +461,8 @@ def run_agent(
             "args": args,
             "allowed": outcome["allowed"],
             "output": outcome["output"][:1200],
+            "pending": outcome.get("pending"),
+            "diff": outcome.get("diff"),
         })
 
         verdict = "RESULT" if outcome["allowed"] else "REFUSED BY SECURITY POLICY"
@@ -358,3 +494,7 @@ def _finish(answer, steps, provider, model, started, failed=False, malformed=Fal
         "failed": failed,
         "malformed": malformed,
     }
+
+
+# Older name, kept so existing imports keep working.
+ReadOnlyToolbox = Toolbox

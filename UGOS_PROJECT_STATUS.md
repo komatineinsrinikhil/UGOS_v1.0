@@ -3,7 +3,7 @@
 Last Updated: 2026-08-14
 
 Specification: 56 spec files (53 original + UGOS_600, UGOS_800, UGOS_900).
-Reference implementation: working, 18/18 tests passing, CI on every push.
+Reference implementation: working, 23/23 tests passing, CI on every push.
 
 This file is the single source of truth for project state. Both the human and
 any AI assistant working on UGOS should read it before starting, and update it
@@ -80,6 +80,11 @@ Working and tested:
 - **Three reserved modules drafted**: `UGOS_600` tool architecture (from the
   v0.1 Tool Integration Framework), `UGOS_800` evaluation framework (new), and
   `UGOS_900` testing standard.
+- **Write access with approval.** Agents can propose file changes; nothing is
+  written until a human approves the diff. Approval is a policy decision
+  (`PolicyEngine.needs_approval`), not a UI one, so another front end cannot
+  skip it. Writes are confined to `workspace/`, narrower than the read sandbox.
+  Disabled entirely in public demo mode. Five new tests.
 - **Rate-limit resilience.** The agent loop made up to 7 model calls per
   question, which exhausted Gemini's free tier during deployment. MAX_STEPS is
   now 3 (worst case 4 calls, typical 2), and a 429 retries once honouring
@@ -98,8 +103,8 @@ Working and tested:
 - **Spec describes eight specialised agents and nine workflows; the code has two
   agents and no workflow implementations.** Those documents are design, not code.
   The README says so explicitly — keep it that way.
-- **Agent tools are read-only.** Write access needs tightened sandbox roots and a
-  confirmation step before it is safe to enable.
+- **Writes are enabled but unproven in daily use.** The approval flow works and
+  is tested; it has not been lived with.
 - **No tool implements the L3 actions yet.** `DELEGATE_TASK`, `ROUTE_API` and
   `QUERY_DATABASE` are defined and gated, but nothing in the registry requests
   them, so L3 is enforceable but unexercised.
@@ -118,7 +123,7 @@ Working and tested:
 
 Pick one; none is in progress:
 
-1. Add write access to the agent: sandbox roots + diff + confirmation
+1. Deploy the public demo (code ready; needs a host)
 2. Build the UGOS_800 probe harness and add the missing tests from UGOS_900
 3. Deploy the public demo (code is ready: `UGOS_PUBLIC=1`, `render.yaml`,
    `Procfile`). Remaining work is choosing a host and pushing.

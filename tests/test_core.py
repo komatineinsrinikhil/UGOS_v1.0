@@ -333,3 +333,71 @@ def test_legacy_permission_names_still_resolve():
     assert PermissionLevel.STANDARD_EXEC is PermissionLevel.L1_STANDARD
     assert PermissionLevel("ELEVATED") is PermissionLevel.L2_SANDBOXED
     assert PermissionLevel.L3_INTEGRATOR.rank == 3
+
+
+# ---------------------------------------------------------------------------
+# 19-23. Write access: proposal, approval, and the workspace boundary
+# ---------------------------------------------------------------------------
+
+def test_policy_marks_write_as_needing_approval():
+    """Authorisation and consent are different questions (UGOS_402)."""
+    policy = PolicyEngine()
+    assert policy.needs_approval(SecurityAction.WRITE_FILE) is True
+    assert policy.needs_approval(SecurityAction.EXECUTE_SHELL) is True
+    assert policy.needs_approval(SecurityAction.READ_FILE) is False
+
+
+def test_write_is_proposed_not_performed():
+    """A write must not touch the disk until it is approved."""
+    import shutil
+    from ugos_agent import Toolbox
+
+    box = Toolbox(allow_write=True)
+    try:
+        result = box.run("write_file", {"path": "t_proposed.txt", "content": "hello\n"})
+        assert result["allowed"] is True
+        assert result["pending"]
+        assert not (box.write_root / "t_proposed.txt").exists(), "file written before approval"
+
+        box.approve(result["pending"])
+        assert (box.write_root / "t_proposed.txt").read_text() == "hello\n"
+    finally:
+        shutil.rmtree(box.write_root, ignore_errors=True)
+
+
+def test_rejected_write_never_happens():
+    import shutil
+    from ugos_agent import Toolbox
+
+    box = Toolbox(allow_write=True)
+    try:
+        result = box.run("write_file", {"path": "t_rejected.txt", "content": "nope"})
+        box.reject(result["pending"])
+        assert not (box.write_root / "t_rejected.txt").exists()
+        assert box.approve(result["pending"])["ok"] is False
+    finally:
+        shutil.rmtree(box.write_root, ignore_errors=True)
+
+
+def test_writes_cannot_escape_the_workspace():
+    """Writes are confined more tightly than reads: an agent must not be able
+    to reach the project, and least of all its own policy file."""
+    import shutil
+    from ugos_agent import Toolbox
+
+    box = Toolbox(allow_write=True)
+    try:
+        for escape in ("../hack.py", "../../src/ugos/security/policy.py", "/tmp/hack.py"):
+            result = box.run("write_file", {"path": escape, "content": "x"})
+            assert result["allowed"] is False, f"{escape} was not refused"
+            assert "workspace" in result["output"]
+    finally:
+        shutil.rmtree(box.write_root, ignore_errors=True)
+
+
+def test_read_only_toolbox_refuses_writes():
+    from ugos_agent import Toolbox
+
+    result = Toolbox().run("write_file", {"path": "x.txt", "content": "x"})
+    assert result["allowed"] is False
+    assert "read-only" in result["output"].lower()

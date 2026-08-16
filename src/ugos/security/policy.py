@@ -100,6 +100,20 @@ FILE_ACTIONS = (SecurityAction.READ_FILE, SecurityAction.WRITE_FILE)
 # stands in for that approval -- but the default is deny.
 ELEVATION_GATED_LEVELS = frozenset({"L4_GUARDED", "L5_ROOT"})
 
+# Actions that must be shown to a human before they take effect, even when the
+# agent is fully authorised to perform them. Authorisation and approval are
+# different questions: "may this agent write files?" is policy, "do you want
+# THIS write?" is consent. An agent can hold WRITE_FILE and still be required
+# to ask.
+#
+# This lives here rather than in the interface on purpose. If approval were a
+# UI decision, a different front end could skip it.
+APPROVAL_REQUIRED_ACTIONS = frozenset({
+    SecurityAction.WRITE_FILE,
+    SecurityAction.EXECUTE_SHELL,
+    SecurityAction.MODIFY_SYSTEM,
+})
+
 
 class PolicyEngine:
     """Zero-Trust Security & Permission Policy Enforcement Engine."""
@@ -108,9 +122,13 @@ class PolicyEngine:
         self,
         default_profile: str = "STRICT",
         sandbox_roots: Optional[List[Union[str, Path]]] = None,
+        approval_required: Optional[frozenset] = None,
     ):
         self.default_profile = default_profile
         self.audit_log: List[Dict[str, Any]] = []
+        self.approval_required = (
+            APPROVAL_REQUIRED_ACTIONS if approval_required is None else approval_required
+        )
 
         # Directories file operations may touch. Anything outside is denied,
         # including paths reached via .. traversal, because targets are fully
@@ -265,6 +283,15 @@ class PolicyEngine:
                 logging.info(f"🔐 [SECURITY ALLOWED] Agent '{agent_id}' -> {action.value} ({target or 'N/A'})")
             else:
                 logging.warning(f"🚨 [SECURITY DENIED] Agent '{agent_id}' -> {action.value} ({target or 'N/A'}) | Reason: {reason}")
+
+    def needs_approval(self, action: SecurityAction) -> bool:
+        """
+        True if this action must be confirmed by a human before it takes effect.
+
+        Separate from authorize_action: an agent can be authorised and still
+        need consent. Callers that ignore this are not enforcing policy.
+        """
+        return action in self.approval_required
 
     def last_decision(self) -> Optional[Dict[str, Any]]:
         """Most recent audit entry, for surfacing the reason to a caller."""
