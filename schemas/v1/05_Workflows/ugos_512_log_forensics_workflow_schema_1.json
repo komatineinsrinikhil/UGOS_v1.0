@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/log_forensics_payload.json",
+  "workflow_execution_id": "wf_log_902811",
+  "timestamp": "2026-08-10T09:30:00Z",
+  "target_scope": {
+    "system_component": "UGOS_100_Execution_Engine",
+    "time_window_start": "2026-08-10T08:00:00Z",
+    "time_window_end": "2026-08-10T09:00:00Z",
+    "log_source_uris": [
+      "mem://logs/telemetry_trace_20260810.parquet"
+    ]
+  },
+  "symptoms_reported": [
+    "P99 latency exceeding 5000ms",
+    "Unhandled OutOfMemory exceptions in sandbox worker #3"
+  ],
+  "confidence_threshold": 0.85
+}

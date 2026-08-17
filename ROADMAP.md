@@ -22,7 +22,7 @@ enough detail to start without re-deciding anything.
 | Provider router | `ugos_providers.py` | **Working** | 8 backends, fallback chain, errors explain themselves |
 | Agent loop | `ugos_agent.py` | **Working** | Read-only tools, per-tool enforcement, tolerant parsing |
 | Web interface | `ugos_web.py` | **Working** | Markdown, highlighting, conversation, agent steps |
-| Public demo mode | `ugos_web.py` | **Built, undeployed** | Bring-your-own-key, no server key, rate limited |
+| Public demo mode | `ugos_web.py` | **Deployed** | Live on Render, bring-your-own-key, rate limited |
 | Base agent | `src/ugos/agents/base.py` | **Working** | Security path cannot be bypassed |
 | Specialist agents | `src/ugos/agents/specialized.py` | **2 of 8** | SoftwareEngineer, SecurityAudit |
 | Workflows | — | **0 of 9** | Specified only |
@@ -43,8 +43,9 @@ is the right call, but it remains the largest gap between document and reality.
 asserts its reason rather than just a boolean. `ugos_agent.py` and
 `ugos_providers.py` remain uncovered.
 
-**Nothing is deployed.** The public demo works locally and is committed but has
-no URL.
+**It is deployed.** The public demo runs on Render in bring-your-own-key mode,
+and has been used with a real key. The security model behaves the same on a
+server as it does locally.
 
 ## 1.3 Known defects and rough edges
 
@@ -55,7 +56,8 @@ no URL.
 | 3 | `list_dir` and `system_status` bypass the `ToolEngine` registry | Two code paths for tools instead of one |
 | ~~4~~ | ~~No CI~~ | Fixed: GitHub Actions runs 18 tests per push |
 | 5 | 22 spec files have run-together paragraphs | Readable but ugly; needs a human pass |
-| 6 | `schemas/v1` empty; `extract_schemas.py` never run | Spec claims schemas that do not exist |
+| ~~6~~ | ~~`schemas/v1` empty~~ | Fixed: 44 schemas extracted; the script had a hardcoded Windows path |
+| 7 | Agent tools still bypass `ToolEngine` for `list_dir` / `system_status` | Two code paths; see UGOS_600 deviations |
 
 ---
 
@@ -255,8 +257,9 @@ versions.
 | When | Do | Why |
 |---|---|---|
 | ~~Done~~ | ~~2.1, 2.2, 2.3, 2.4~~ | Rate limits fixed, security provable, CI green |
-| **Next** | **Deploy to Render** | The URL is what makes it shareable |
-| Then | 3.1 write access | The biggest capability jump |
+| ~~Done~~ | ~~Deploy to Render~~ | Live, bring-your-own-key |
+| ~~Done~~ | ~~3.1 write access~~ | Proposes a diff; a human approves |
+| **Next** | **3.3 evaluation harness** | Turns the security claim into evidence |
 | Then | 4.2 policy files | Turns it into infrastructure |
 | Then | 3.3 evaluation | Evidence for the security claim |
 | Later | 4.1 package | Only after the API has been used in anger |

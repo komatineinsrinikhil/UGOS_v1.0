@@ -1,0 +1,17 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/zero_trust_verification_payload.json",
+  "verification_id": "zt_ver_902811b",
+  "timestamp": "2026-08-11T08:20:00Z",
+  "identity_token": {
+    "issuer": "spiffe://ugos.dev/ns/core/sa/agent_211",
+    "subject_agent": "UGOS_211",
+    "assigned_privilege": "L2_SANDBOXED",
+    "jti": "jti_zt_882019a",
+    "expires_at": "2026-08-11T08:25:00Z"
+  },
+  "request_target": {
+    "target_engine": "UGOS_107_Tool_Engine",
+    "action": "EXECUTE_TOOL",
+    "tool_id": "ast_patch_applier"
+  }
+}

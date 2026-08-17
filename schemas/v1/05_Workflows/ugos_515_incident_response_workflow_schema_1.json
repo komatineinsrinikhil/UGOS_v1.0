@@ -1,0 +1,15 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/incident_response_payload.json",
+  "workflow_execution_id": "wf_inc_911002",
+  "timestamp": "2026-08-10T09:44:00Z",
+  "incident_details": {
+    "severity_level": "SEV_1_CRITICAL",
+    "incident_type": "UNAUTHORIZED_CREDENTIAL_EXFILTRATION",
+    "affected_service": "UGOS_API_Gateway",
+    "trigger_source": "ebpf_kernel_monitor"
+  },
+  "containment_policy": {
+    "auto_quarantine_enabled": true,
+    "max_mitigation_time_seconds": 300
+  }
+}

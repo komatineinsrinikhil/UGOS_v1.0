@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/security_policy_evaluation_payload.json",
+  "evaluation_id": "sec_eval_902811a",
+  "timestamp": "2026-08-11T08:15:00Z",
+  "subject": {
+    "agent_id": "UGOS_211",
+    "current_privilege_level": "L2_SANDBOXED",
+    "tenant_id": "tenant_core_prod"
+  },
+  "requested_action": {
+    "target_resource": "mem://workspace/ugos_core/security/keys.py",
+    "operation": "WRITE_FILE",
+    "required_privilege_level": "L4_GUARDED"
+  },
+  "execution_context": {
+    "sandbox_id": "sbx_proc_10482",
+    "network_egress_enabled": false
+  }
+}

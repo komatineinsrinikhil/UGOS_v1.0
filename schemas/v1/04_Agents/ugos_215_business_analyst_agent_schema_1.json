@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/requirement_synthesis_payload.json",
+  "request_id": "req_ba_102938",
+  "timestamp": "2026-08-10T09:05:00Z",
+  "raw_intent": "We need a rate-limiting mechanism for our public APIs to prevent abuse while allowing high-tier subscribers higher throughput.",
+  "domain_context": {
+    "system": "UGOS_API_Gateway",
+    "target_users": [
+      "FREE_TIER",
+      "PREMIUM_TIER"
+    ]
+  },
+  "output_depth": "FULL_PRD"
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/doc_generation_payload.json",
+  "workflow_execution_id": "wf_doc_881920",
+  "timestamp": "2026-08-10T09:35:00Z",
+  "target_scope": {
+    "repository_root": "mem://workspace/ugos_core/",
+    "source_directories": [
+      "ugos/engines/",
+      "ugos/agents/"
+    ],
+    "output_directory": "docs/api/"
+  },
+  "generation_targets": {
+    "api_reference_markdown": true,
+    "openapi_spec": true,
+    "mermaid_architecture_diagrams": true
+  },
+  "quality_thresholds": {
+    "min_docstring_coverage_pct": 95.0,
+    "fail_on_broken_links": true
+  }
+}

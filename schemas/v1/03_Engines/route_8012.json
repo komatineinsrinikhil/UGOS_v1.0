@@ -1,0 +1,25 @@
+{
+  "routing_id": "ROUTE-8012",
+  "task_id": "TASK-5012",
+  "subtask_id": "STEP-01",
+  "required_capabilities": [
+    "file_read",
+    "pattern_matching"
+  ],
+  "required_security_level": "L1",
+  "candidate_agents": [
+    {
+      "agent_id": "Research_Agent",
+      "capability_match_score": 0.95,
+      "health_status": "ONLINE",
+      "current_load": 2
+    },
+    {
+      "agent_id": "Software_Engineer_Agent",
+      "capability_match_score": 0.7,
+      "health_status": "ONLINE",
+      "current_load": 0
+    }
+  ],
+  "assigned_agent": "Research_Agent"
+}

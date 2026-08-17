@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/vector_store_write_payload.json",
+  "write_id": "vec_w_902811d",
+  "timestamp": "2026-08-11T08:20:00Z",
+  "collection_name": "ugos_semantic_m3",
+  "points": [
+    {
+      "point_id": "pnt_chk_310_01",
+      "vector": [
+        0.0124,
+        -0.0942,
+        0.4412,
+        0.1082
+      ],
+      "payload": {
+        "chunk_id": "chk_310_01",
+        "doc_id": "doc_kb_902811a",
+        "security_level": "L2_INTERNAL",
+        "namespace": "ugos.memory.specs",
+        "content_summary": "UGOS_310 Knowledge Base Schema specification definition."
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/workflow_definition_payload.json",
+  "workflow_id": "wf_def_500_patching",
+  "version": "1.0.0",
+  "metadata": {
+    "name": "Automated Vulnerability Patching Workflow",
+    "description": "Scans, patches, tests, and verifies zero-day vulnerabilities."
+  },
+  "execution_policy": {
+    "max_execution_time_seconds": 1800,
+    "concurrency_limit": 5,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff_factor": 2.0,
+      "initial_delay_seconds": 5
+    }
+  },
+  "nodes": [
+    {
+      "node_id": "step_01_scan",
+      "assigned_agent": "UGOS_212",
+      "action": "RUN_SECURITY_AUDIT",
+      "timeout_seconds": 120
+    },
+    {
+      "node_id": "step_02_patch",
+      "assigned_agent": "UGOS_211",
+      "action": "GENERATE_SECURITY_PATCH",
+      "depends_on": [
+        "step_01_scan"
+      ],
+      "compensation_action": "REVERT_GIT_PATCH"
+    }
+  ]
+}

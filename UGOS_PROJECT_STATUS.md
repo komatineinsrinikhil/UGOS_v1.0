@@ -24,13 +24,12 @@ codebase quietly breaks.
 
 ## RESERVED MODULES
 
-Drafted 2026-08-14; only schemas/v1 remains empty:
+All drafted and populated as of 2026-08-14:
 
 - [x] 07_Tools_Plugins — UGOS_600 (tool architecture)
 - [x] 09_Evaluation — UGOS_800 (evaluation framework)
 - [x] 11_Testing — UGOS_900 (testing standard)
-- [ ] schemas/v1 — intended for JSON schemas from `extract_schemas.py`, which has
-      not been run against the current doc set
+- [x] schemas/v1 — 44 schemas extracted from the specs by `extract_schemas.py`
 
 ## IMPLEMENTATION STATUS
 
@@ -80,6 +79,16 @@ Working and tested:
 - **Three reserved modules drafted**: `UGOS_600` tool architecture (from the
   v0.1 Tool Integration Framework), `UGOS_800` evaluation framework (new), and
   `UGOS_900` testing standard.
+- **UGOS is deployed.** Running publicly on Render in bring-your-own-key mode.
+  Confirmed working against a real visitor key, with the step cap and tool
+  policy behaving as designed on the server.
+- **`schemas/v1` populated — 44 schemas.** `extract_schemas.py` had an absolute
+  Windows path hardcoded, so it could only ever run on one machine; that is why
+  the folder stayed empty. It now resolves its own location. Found by UGOS
+  itself while scanning its own deployment.
+- **30 schema values were markdown links.** URLs in the specs had been mangled
+  into `[url](url)` by the original paste, so `$schema` fields were not URLs.
+  Unwrapped across 29 files.
 - **Write access with approval.** Agents can propose file changes; nothing is
   written until a human approves the diff. Approval is a policy decision
   (`PolicyEngine.needs_approval`), not a UI one, so another front end cannot

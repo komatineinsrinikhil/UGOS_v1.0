@@ -1,0 +1,10 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/software_eng_task_payload.json",
+  "task_id": "task_swe_882019",
+  "timestamp": "2026-08-10T08:45:00Z",
+  "task_type": "FEATURE_IMPLEMENTATION",
+  "target_language": "python",
+  "specification_ref": "mem://specs/UGOS_201_Base_Agent_Specification.md",
+  "workspace_root": "mem://workspace/ugos_core/",
+  "test_coverage_threshold": 0.9
+}

@@ -1,0 +1,10 @@
+{
+  "request_id": "REQ-100293",
+  "user_id": "USR-8821",
+  "raw_prompt": "Analyze the log files in /var/log/nginx/ and find top 5 HTTP 500 error causes.",
+  "session_id": "SES-9012",
+  "metadata": {
+    "channel": "CLI",
+    "timestamp": "2026-08-09T21:15:00Z"
+  }
+}

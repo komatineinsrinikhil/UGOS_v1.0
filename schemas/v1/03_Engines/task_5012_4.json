@@ -1,0 +1,19 @@
+{
+  "task_id": "TASK-5012",
+  "status": "COMPLETED",
+  "output_type": "MARKDOWN_WITH_ARTIFACTS",
+  "content": "### Analysis Summary\nTop 5 HTTP 500 errors identified...",
+  "artifacts": [
+    {
+      "artifact_id": "ART-01",
+      "type": "JSON",
+      "filename": "error_metrics.json",
+      "payload": "{\"status_500_count\": 421}"
+    }
+  ],
+  "confidence_score": 0.92,
+  "execution_metrics": {
+    "total_duration_ms": 1420,
+    "total_tokens_used": 1850
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/semantic_knowledge_ingest_payload.json",
+  "ingest_id": "sem_ing_902811c",
+  "timestamp": "2026-08-11T08:10:00Z",
+  "namespace": "ugos.architecture.core",
+  "knowledge_triples": [
+    {
+      "subject": "UGOS_211_Software_Engineer",
+      "predicate": "IMPLEMENTS",
+      "object": "UGOS_201_Base_Agent_Spec",
+      "properties": {
+        "compliance_version": "1.0.0"
+      }
+    },
+    {
+      "subject": "UGOS_211_Software_Engineer",
+      "predicate": "DELEGATES_TO",
+      "object": "UGOS_216_QA_Agent",
+      "properties": {
+        "purpose": "Automated Test Suite Verification"
+      }
+    }
+  ],
+  "text_chunks": [
+    {
+      "chunk_id": "chk_swe_01",
+      "content": "UGOS_211 generates code implementations and submits them to UGOS_216 for quality verification.",
+      "vector_embedding": [
+        0.0412,
+        -0.112,
+        0.3812,
+        0.8912
+      ]
+    }
+  ]
+}

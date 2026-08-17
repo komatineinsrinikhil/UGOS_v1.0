@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/security_audit_payload.json",
+  "audit_id": "audit_sec_99382f10",
+  "timestamp": "2026-08-10T08:50:00Z",
+  "target_scope": {
+    "module_id": "UGOS_211",
+    "runtime_pid": 10482,
+    "environment": "production"
+  },
+  "telemetry_stream": {
+    "syscall_log_ref": "mem://kernel/ebpf/stream_88a",
+    "network_ingress_bytes": 1048576,
+    "network_egress_bytes": 2048
+  },
+  "policy_threshold": "STRICT_ZERO_TRUST"
+}

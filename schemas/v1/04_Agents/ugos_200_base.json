@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/agent_invocation_payload.json",
+  "invocation_id": "inv_agt_1092837",
+  "timestamp": "2026-08-10T08:30:00Z",
+  "agent_id": "UGOS_200_BASE",
+  "tier_level": 2,
+  "task_context": {
+    "parent_dag_id": "dag_build_88392",
+    "subtask_id": "node_04_code_gen",
+    "allocated_timeout_seconds": 300
+  },
+  "parameters": {
+    "max_iterations": 10,
+    "confidence_threshold": 0.85
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "suite": "security_probes",
+  "total": 11,
+  "passed": 11,
+  "false_allows": 0,
+  "false_denies": 0,
+  "release_blocking_failures": 0
+}

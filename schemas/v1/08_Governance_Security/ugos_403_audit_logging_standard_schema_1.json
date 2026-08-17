@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/audit_event_payload.json",
+  "audit_id": "aud_evt_902811a",
+  "timestamp": "2026-08-11T08:30:00Z",
+  "event_classification": "SECURITY_POLICY_VIOLATION",
+  "severity": "HIGH",
+  "actor_context": {
+    "agent_id": "UGOS_211",
+    "tenant_id": "tenant_core",
+    "active_privilege_level": "L2_SANDBOXED"
+  },
+  "action_details": {
+    "operation": "WRITE_FILE",
+    "target_resource": "mem://workspace/ugos_core/security/keys.py",
+    "result": "DENIED"
+  },
+  "cryptographic_chain": {
+    "prev_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "signature": "3f8a92b...ce01"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/api_integration_payload.json",
+  "workflow_execution_id": "wf_api_882091",
+  "timestamp": "2026-08-10T09:50:00Z",
+  "source_schema": {
+    "type": "OPENAPI_V3",
+    "schema_url": "https://api.example.com/v1/openapi.json",
+    "target_tool_name": "ExampleServiceWrapper"
+  },
+  "authentication_config": {
+    "auth_type": "OAUTH2_BEARER",
+    "required_scopes": [
+      "read:data",
+      "write:records"
+    ],
+    "credential_store_key": "vault://credentials/example_service"
+  },
+  "security_level_required": "L2_SANDBOXED"
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/feature_implementation_payload.json",
+  "workflow_execution_id": "wf_feat_902811",
+  "timestamp": "2026-08-10T09:40:00Z",
+  "feature_specification": {
+    "feature_id": "FEAT-104",
+    "title": "OAuth2 Refresh Token Revocation Endpoint",
+    "user_story_ref": "mem://specs/stories/US_104_token_revoke.json",
+    "target_repository": "mem://workspace/ugos_core/"
+  },
+  "constraints": {
+    "min_test_coverage_pct": 90.0,
+    "max_refinement_cycles": 3,
+    "security_gate_strictness": "HIGH"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "reasoning_id": "REAS-3012",
+  "task_id": "TASK-5012",
+  "claims": [
+    {
+      "claim_id": "CLM-01",
+      "statement": "Upstream database timeouts caused Nginx 500 errors.",
+      "confidence": 0.88,
+      "evidence_references": [
+        "LOG-ENTRY-4021",
+        "METRIC-DB-TIMEOUT"
+      ]
+    }
+  ],
+  "assumptions": [
+    "Log timestamp matches database server clock within 500ms tolerance."
+  ],
+  "overall_confidence": 0.88,
+  "uncertainty_flags": []
+}

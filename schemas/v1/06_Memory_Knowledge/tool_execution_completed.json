@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/episodic_event_payload.json",
+  "event_id": "ep_evt_902811b",
+  "timestamp": "2026-08-11T08:05:00Z",
+  "session_context": {
+    "session_id": "sess_882019",
+    "workflow_id": "wf_refactor_901823",
+    "agent_id": "UGOS_211"
+  },
+  "event_type": "TOOL_EXECUTION_COMPLETED",
+  "payload": {
+    "tool_name": "ast_patch_applier",
+    "input_params": {
+      "file": "ugos/net/http_client.py"
+    },
+    "output_status": "SUCCESS",
+    "execution_time_ms": 142
+  },
+  "error_fingerprint": null
+}

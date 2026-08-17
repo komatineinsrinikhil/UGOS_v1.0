@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/knowledge_document_payload.json",
+  "doc_id": "doc_kb_902811a",
+  "provenance": {
+    "source_uri": "git://ugos/specs/06_Memory_Knowledge/UGOS_310.md",
+    "sha256_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ingested_at": "2026-08-11T08:15:00Z",
+    "author": "UGOS_217_Documentation_Agent",
+    "security_level": "L2_INTERNAL"
+  },
+  "document_metadata": {
+    "title": "UGOS_310 Knowledge Base Schema",
+    "mime_type": "text/markdown",
+    "version": "1.0.0",
+    "language": "en-US"
+  },
+  "chunks": [
+    {
+      "chunk_id": "chk_310_01",
+      "index_order": 0,
+      "content": "# UGOS_310_Knowledge_Base_Schema.md\n\n**Module:** `06_Memory_Knowledge`...",
+      "token_count": 128,
+      "parent_header_path": "UGOS_310 > Module Overview",
+      "entities_extracted": [
+        "UGOS_310",
+        "06_Memory_Knowledge"
+      ]
+    }
+  ]
+}

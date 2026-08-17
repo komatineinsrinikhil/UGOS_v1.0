@@ -1,0 +1,4 @@
+{
+  "status": "DENIED",
+  "reason": "Action 'write_file' not authorized for agent 'ag_reader_01' under permission level L0_UNTRUSTED."
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/agent_delegation_frame.json",
+  "frame_id": "frm_route_902811",
+  "timestamp": "2026-08-10T08:52:00Z",
+  "routing_header": {
+    "sender_agent_id": "UGOS_211",
+    "recipient_agent_id": "UGOS_216",
+    "hop_count": 1,
+    "max_hops": 3,
+    "correlation_id": "corr_task_882019"
+  },
+  "payload_reference": {
+    "type": "MEMORY_POINTER",
+    "context_uri": "mem://snapshots/ctx_swe_task_882019.json",
+    "security_level": "L4_GUARDED"
+  },
+  "callback_address": "mem://channels/responses/UGOS_211_callback"
+}

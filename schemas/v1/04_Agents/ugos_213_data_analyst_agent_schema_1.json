@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/data_analysis_payload.json",
+  "analysis_id": "ana_data_902811a",
+  "timestamp": "2026-08-10T08:55:00Z",
+  "source_data": {
+    "type": "LOG_STREAM",
+    "location": "mem://engines/execution/trace_logs_20260810.parquet",
+    "format": "PARQUET"
+  },
+  "analytical_objective": {
+    "target_metrics": [
+      "latency_p99",
+      "memory_rss_mb",
+      "error_count"
+    ],
+    "group_by": "agent_id",
+    "time_window": "1h"
+  },
+  "visualization_requested": true
+}

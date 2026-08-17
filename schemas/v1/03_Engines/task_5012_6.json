@@ -1,0 +1,14 @@
+{
+  "evaluation_id": "EVAL-1092",
+  "task_id": "TASK-5012",
+  "verification_passed": true,
+  "confidence_score": 0.92,
+  "constraint_checks": [
+    {
+      "constraint": "Output limit <= 5 causes",
+      "satisfied": true
+    }
+  ],
+  "safety_check_passed": true,
+  "rejection_reason": null
+}

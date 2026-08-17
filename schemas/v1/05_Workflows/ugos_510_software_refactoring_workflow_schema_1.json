@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/refactoring_workflow_payload.json",
+  "workflow_execution_id": "wf_refactor_901823",
+  "timestamp": "2026-08-10T09:20:00Z",
+  "target_repository": "mem://workspace/ugos_core/",
+  "refactoring_objective": {
+    "type": "API_MIGRATION",
+    "description": "Migrate all legacy synchronous HTTP requests to async HTTPX calls.",
+    "affected_modules": [
+      "ugos/net/",
+      "ugos/agents/"
+    ]
+  },
+  "constraints": {
+    "allow_breaking_api_changes": false,
+    "min_test_coverage_pct": 92.0,
+    "max_iterations": 3
+  }
+}

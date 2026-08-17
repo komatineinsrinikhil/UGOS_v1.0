@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/qa_evaluation_payload.json",
+  "evaluation_id": "qa_eval_991823",
+  "timestamp": "2026-08-10T09:10:00Z",
+  "target_artifact": {
+    "type": "PYTHON_MODULE",
+    "source_ref": "mem://workspace/ugos_core/rate_limiter.py",
+    "spec_ref": "mem://specs/US_01_rate_limiting.json"
+  },
+  "test_types_required": [
+    "UNIT",
+    "BOUNDARY",
+    "MUTATION"
+  ],
+  "min_coverage_pct": 90.0
+}

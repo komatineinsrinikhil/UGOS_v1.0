@@ -1,0 +1,25 @@
+{
+  "plan_id": "PLAN-9012",
+  "task_id": "TASK-5012",
+  "nodes": [
+    {
+      "node_id": "STEP-01",
+      "action": "Read log directory",
+      "required_capability": "file_read",
+      "target_agent": "Research_Agent",
+      "required_permission": "L1",
+      "dependencies": []
+    },
+    {
+      "node_id": "STEP-02",
+      "action": "Parse HTTP 500 occurrences",
+      "required_capability": "pattern_matching",
+      "target_agent": "Data_Analyst_Agent",
+      "required_permission": "L0",
+      "dependencies": [
+        "STEP-01"
+      ]
+    }
+  ],
+  "contains_high_risk_actions": false
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/research_task_payload.json",
+  "task_id": "task_res_902811",
+  "timestamp": "2026-08-10T08:40:00Z",
+  "query": "Synthesize latest 2026 benchmark results for agentic execution frameworks.",
+  "constraints": {
+    "max_sources": 10,
+    "min_confidence": 0.85,
+    "allowed_domains": [
+      "arxiv.org",
+      "github.com",
+      "huggingface.co"
+    ]
+  },
+  "output_format": "STRUCTURED_SUMMARY"
+}

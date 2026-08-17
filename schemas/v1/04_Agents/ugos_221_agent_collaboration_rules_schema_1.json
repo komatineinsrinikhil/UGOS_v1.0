@@ -1,0 +1,19 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/conflict_arbitration_payload.json",
+  "arbitration_id": "arb_collab_901823",
+  "timestamp": "2026-08-10T08:54:00Z",
+  "conflict_type": "CODE_VS_SECURITY_POLICY",
+  "competing_outputs": [
+    {
+      "agent_id": "UGOS_211",
+      "proposal_ref": "mem://patches/patch_swe_882019.patch",
+      "claim": "Allow dynamic string formatting in system logging."
+    },
+    {
+      "agent_id": "UGOS_212",
+      "proposal_ref": "mem://patches/sec_override_004921.patch",
+      "claim": "Reject dynamic string formatting due to CWE-134 vulnerability risk."
+    }
+  ],
+  "target_artifact_uri": "ugos/core/logging.py"
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/data_pipeline_payload.json",
+  "workflow_execution_id": "wf_data_882019",
+  "timestamp": "2026-08-10T09:45:00Z",
+  "pipeline_configuration": {
+    "source_uri": "mem://data/staging/raw_telemetry_20260810.parquet",
+    "target_uri": "mem://data/warehouse/telemetry_aggregated.parquet",
+    "format": "PARQUET",
+    "schema_validation_rule": "STRICT_ENFORCE"
+  },
+  "transformation_specs": {
+    "aggregations": [
+      "COUNT(event_id)",
+      "AVG(latency_ms)",
+      "P99(memory_mb)"
+    ],
+    "group_by": [
+      "agent_id",
+      "execution_status"
+    ],
+    "generate_vector_embeddings": true
+  },
+  "privacy_policy": {
+    "redact_pii": true,
+    "anonymize_ip_addresses": true
+  }
+}

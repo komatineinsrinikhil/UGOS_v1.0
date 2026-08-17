@@ -1,0 +1,12 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/documentation_task_payload.json",
+  "task_id": "task_doc_881029",
+  "timestamp": "2026-08-10T09:15:00Z",
+  "task_type": "API_REFERENCE_GEN",
+  "source_directory": "mem://workspace/ugos_core/agents/",
+  "output_format": "MARKDOWN",
+  "options": {
+    "include_private_methods": false,
+    "generate_mermaid_diagrams": true
+  }
+}

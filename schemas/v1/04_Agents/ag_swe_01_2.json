@@ -1,0 +1,7 @@
+{
+  "status": "BLOCKED_BY_SECURITY",
+  "agent_id": "ag_swe_01",
+  "action": "execute_shell",
+  "target": "system_command",
+  "reason": "Action violated Zero-Trust policy rules."
+}

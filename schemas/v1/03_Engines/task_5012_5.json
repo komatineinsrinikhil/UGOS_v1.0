@@ -1,0 +1,12 @@
+{
+  "execution_id": "EXEC-9012",
+  "task_id": "TASK-5012",
+  "tool_id": "file_reader_v1",
+  "requested_by_agent": "Research_Agent",
+  "parameters": {
+    "file_path": "/var/log/nginx/access.log",
+    "max_lines": 500
+  },
+  "evaluated_permission": "L1",
+  "approval_token": null
+}

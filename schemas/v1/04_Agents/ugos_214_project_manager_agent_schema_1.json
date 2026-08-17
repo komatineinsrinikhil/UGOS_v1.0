@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ugos.dev/schemas/v1/project_plan_payload.json",
+  "project_id": "prj_pm_901823",
+  "timestamp": "2026-08-10T09:00:00Z",
+  "macro_objective": "Build and deploy a secure REST API service for user authentication.",
+  "subtasks": [
+    {
+      "id": "task_01",
+      "name": "Research OAuth2 standards",
+      "target_agent": "UGOS_210",
+      "dependencies": []
+    },
+    {
+      "id": "task_02",
+      "name": "Generate API implementation code",
+      "target_agent": "UGOS_211",
+      "dependencies": [
+        "task_01"
+      ]
+    },
+    {
+      "id": "task_03",
+      "name": "Audit source code for security flaws",
+      "target_agent": "UGOS_212",
+      "dependencies": [
+        "task_02"
+      ]
+    }
+  ],
+  "sla_deadline": "2026-08-10T12:00:00Z"
+}
